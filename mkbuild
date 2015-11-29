@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+
+srcs = [
+  'bytes',
+  'camera',
+  'image',
+  'image_png',
+  'main',
+  'math3d',
+  'mesh',
+  'ohno',
+  'util'
+]
+
+build = open('build.ninja', 'w')
+
+build.write('''cc = clang++
+cflags = -std=c++11 -Wall -Wextra -g -O0
+libs = -lm -lGL -lGLEW -lglfw -lpng
+
+rule cc
+  depfile = $out.d
+  command = $cc -c $cflags -MMD -MF $out.d -o $out $in
+
+rule ln
+  command = $cc $libs -o $out $in
+
+build out/a.out: ln %s
+
+%s
+''' % (' '.join(['out/' + s + '.o' for s in srcs]),
+       '\n'.join(['build out/' + s + '.o: cc src/' + s + '.cc' for s in srcs]))
+)
+
+build.close()

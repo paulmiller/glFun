@@ -1,0 +1,8 @@
+*.swp
+.fuse_hidden*
+
+build.ninja
+.ninja_deps
+.ninja_log
+
+out/
