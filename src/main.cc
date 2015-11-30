@@ -319,7 +319,7 @@ int submain() {
   GLenum glewError = glGetError();
   assert(glewError == GL_NO_ERROR || glewError == GL_INVALID_ENUM);
 
-  GLuint purple = pngTex("res/uv.png");
+  GLuint color = pngTex("res/suzanne-color.png");
 
   assert(checkGL());
 
@@ -360,8 +360,8 @@ int submain() {
 
   int64_t frame = 0;
   while(!glfwWindowShouldClose(window)) {
-    double t = frame / 100.0;
-    camera.lookAt(Vec3(2*sin(t), 1, 2*cos(t)), Vec3::ZERO, Vec3::UNIT_Y);
+    double t = sin(frame / 100.0);
+    camera.lookAt(Vec3(2*sin(t), 0.5, 2*cos(t)), Vec3::ZERO, Vec3::UNIT_Y);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -372,7 +372,7 @@ int submain() {
     assert(checkGL());
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, purple);
+    glBindTexture(GL_TEXTURE_2D, color);
     glUniform1i(samplerId, 0);
 
     assert(checkGL());
@@ -422,7 +422,7 @@ int submain() {
   glDeleteBuffers(1, &uvBufferId);
   glDeleteBuffers(1, &vertBufferId);
   glDeleteVertexArrays(1, &arrayId);
-  glDeleteTextures(1, &purple);
+  glDeleteTextures(1, &color);
 
   assert(checkGL());
 

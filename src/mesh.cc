@@ -67,7 +67,7 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
     } else if(2 == sscanf(line, "vt %f %f", &u, &v)) {
       // Add a UV coordinate
       provideObject();
-      objects.back().mUVs.emplace_back(u, v);
+      objects.back().mUVs.emplace_back(u, 1.0f - v);
     } else if(3 == sscanf(line, "vn %f %f %f", &x, &y, &z)) {
       // Add a normal vector
       provideObject();
