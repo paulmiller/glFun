@@ -132,19 +132,39 @@ GLuint uvVBO(const Mesh &m) {
     }
   }
 
-  for(int i = 0; i < 3 * 2; i++) {
-    std::cout << vbo[i] << ' ';
-  }
-  std::cout << std::endl;
-
-  GLuint vertBufferId;
-  glGenBuffers(1, &vertBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, vertBufferId);
+  GLuint uvBufferId;
+  glGenBuffers(1, &uvBufferId);
+  glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
   glBufferData(GL_ARRAY_BUFFER, floatNum * sizeof(GLfloat), vbo,
     GL_STATIC_DRAW);
 
   delete[] vbo;
-  return vertBufferId;
+  return uvBufferId;
+}
+
+GLuint normVBO(const Mesh &m) {
+  // 3 normals per tri, 3 floats per normal
+  int floatNum = m.mTris.size() * 3 * 3;
+  GLfloat *vbo = new GLfloat[floatNum];
+
+  int b = 0;
+  for(auto it = m.mTris.begin(); it != m.mTris.end(); it++) {
+    for(int i = 0; i < 3; i++) {
+      const Vec3 &n = m.mNormals[it->normalIdxs[i]];
+      vbo[b++] = n.x;
+      vbo[b++] = n.y;
+      vbo[b++] = n.z;
+    }
+  }
+
+  GLuint normBufferId;
+  glGenBuffers(1, &normBufferId);
+  glBindBuffer(GL_ARRAY_BUFFER, normBufferId);
+  glBufferData(GL_ARRAY_BUFFER, floatNum * sizeof(GLfloat), vbo,
+    GL_STATIC_DRAW);
+
+  delete[] vbo;
+  return normBufferId;
 }
 
 // https://www.opengl.org/registry/doc/glspec45.core.pdf table 8.9 pg 226
@@ -333,6 +353,7 @@ int submain() {
   std::vector<Mesh> widgets = Mesh::parseObj(widgetInput);
   GLuint vertBufferId = vertVBO(widgets[0]);
   GLuint uvBufferId = uvVBO(widgets[0]);
+  GLuint normBufferId = normVBO(widgets[0]);
 
   assert(checkGL());
 
@@ -405,10 +426,25 @@ int submain() {
 
     assert(checkGL());
 
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, normBufferId);
+    glVertexAttribPointer(
+      2,                  // attribute 0. No particular reason for 0,
+                          // but must match the layout in the shader.
+      3,                  // size
+      GL_FLOAT,           // type
+      GL_FALSE,           // normalized?
+      0,                  // stride
+      (void*)0            // array buffer offset
+    );
+
+    assert(checkGL());
+
     glDrawArrays(GL_TRIANGLES, 0, widgets[0].mTris.size() * 3);
 
     assert(checkGL());
 
+    glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
 
