@@ -5,6 +5,6 @@
 
 #include <istream>
 
-Image readPng(std::istream &input);
+Image loadPng(std::istream &input);
 
 #endif

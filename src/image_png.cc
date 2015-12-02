@@ -85,7 +85,7 @@ namespace {
   };
 }
 
-Image readPng(std::istream &input) {
+Image loadPng(std::istream &input) {
   char signature[PNG_SIG_SIZE];
   input.read(signature, PNG_SIG_SIZE);
   if(!input.good()) {
@@ -179,7 +179,7 @@ Image readPng(std::istream &input) {
     }
   }
 
-  std::cout << "width=" << width << " height=" << height
+  std::cout << "loaded PNG width=" << width << " height=" << height
       << " bitDepth=" << (int) bitDepth << " hasAlpha=" << hasAlpha
       << " type=" << Pixel::name(type) << std::endl;
 
@@ -188,9 +188,9 @@ Image readPng(std::istream &input) {
   png_bytepp rows = new png_bytep[height];
   for(int i = 0; i < (int)height; i++) {
     rows[i] = reinterpret_cast<png_bytep>(img.getRowPtr(i));
-    //std::cout << "rows[" << i << "]=" << ((void*)rows[i]) << std::endl;
   }
   png_read_image(pngStruct, rows);
+  delete[] rows;
 
   return img;
 }

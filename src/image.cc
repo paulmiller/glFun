@@ -5,17 +5,16 @@
 #include <cstdio> // snprintf
 
 std::size_t Pixel::size(Type t) {
-  // Return our own, un-padded sizes to avoid alignment uncertainty.
   switch(t) {
     case NONE:   return 0;
-    case V8:     return 1;
-    case V16:    return 2;
-    case VA8:    return 2;
-    case VA16:   return 4;
-    case RGB8:   return 3;
-    case RGB16:  return 6;
-    case RGBA8:  return 4;
-    case RGBA16: return 8;
+    case V8:     return sizeof(PixelV8);
+    case V16:    return sizeof(PixelV16);
+    case VA8:    return sizeof(PixelVA8);
+    case VA16:   return sizeof(PixelVA16);
+    case RGB8:   return sizeof(PixelRGB8);
+    case RGB16:  return sizeof(PixelRGB16);
+    case RGBA8:  return sizeof(PixelRGBA8);
+    case RGBA16: return sizeof(PixelRGBA16);
 
     default:
       assert(0);

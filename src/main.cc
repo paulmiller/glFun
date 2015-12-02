@@ -240,7 +240,7 @@ GLuint texGlType(Pixel::Type t) {
 
 GLuint pngTex(const char *pngName) {
   std::ifstream input(pngName, std::ifstream::binary);
-  Image texImg = readPng(input);
+  Image texImg = loadPng(input);
   Pixel::Type type = texImg.type();
   GLuint texId;
   glGenTextures(1, &texId);
@@ -812,7 +812,7 @@ int submain() {
     std::string name = std::string(path) + std::string(tests[i]);
     std::ifstream input(name.c_str(), std::ifstream::binary);
     try {
-      Image img = readPng(input);
+      Image img = loadPng(input);
       std::cout << img;
     } catch(OhNo ohno) {
       std::cout << ohno << std::endl;
