@@ -5,11 +5,15 @@
 
 // TODO *= etc.
 
+class Mat4;
+class Vec3;
+class Vec4;
+class Quat;
+class Ray;
+
 /*****************************************************************************
  * Mat4                                                                      *
  *****************************************************************************/
-
-class Vec3;
 
 class Mat4 {
 private:
@@ -21,6 +25,7 @@ public:
 
   static Mat4 translation(const Vec3 &v);
   static Mat4 rotation(float theta, const Vec3 &axis);
+  static Mat4 rotation(const Quat &q);
   static Mat4 scale(const Vec3 &v);
 
   Mat4();
@@ -124,6 +129,26 @@ bool operator!=(const Vec4 &a, const Vec4 &b);
 std::ostream& operator<<(std::ostream& out, const Vec4& v);
 
 /*****************************************************************************
+ * Quat                                                                      *
+ *****************************************************************************/
+
+class Quat {
+public:
+  float r, x, y, z;
+
+  static Quat rotation(float theta, const Vec3 &axis);
+
+  Quat();
+  Quat(float r_, float x_, float y_, float z_);
+  Quat(const Quat &src);
+
+  Quat unit() const; // a.k.a. versor
+};
+
+Quat operator*(const Quat &a, const Quat &b); // Hamilton product
+std::ostream& operator<<(std::ostream& out, const Quat& q);
+
+/*****************************************************************************
  * Misc                                                                      *
  *****************************************************************************/
 
@@ -140,5 +165,7 @@ Vec4 operator*(const Mat4 &m, const Vec4 &v);
 
 // Transforms both origin and direction of a Ray
 Ray operator*(const Mat4 &m, const Ray &r);
+
+void assertMath();
 
 #endif

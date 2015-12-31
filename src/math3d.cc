@@ -71,6 +71,17 @@ Mat4 Mat4::rotation(float theta, const Vec3 &axis) {
   );
 }
 
+Mat4 Mat4::rotation(const Quat &q) {
+  Quat u = q.unit();
+
+  return Mat4(
+    1-2*(u.y*u.y+u.z*u.z),   2*(u.x*u.y-u.r*u.z),   2*(u.x*u.z+u.r*u.y), 0,
+      2*(u.x*u.y+u.r*u.z), 1-2*(u.x*u.x+u.z*u.z),   2*(u.y*u.z-u.r*u.x), 0,
+      2*(u.x*u.z-u.r*u.y),   2*(u.y*u.z+u.r*u.x), 1-2*(u.x*u.x+u.y*u.y), 0,
+                         0,                    0,                     0, 1
+  );
+}
+
 Mat4 Mat4::scale(const Vec3 &v) {
   return Mat4(
     v.x,   0,   0, 0,
@@ -378,6 +389,42 @@ std::ostream& operator<<(std::ostream& out, const Vec4& v) {
 }
 
 /*****************************************************************************
+ * Quat                                                                      *
+ *****************************************************************************/
+
+Quat Quat::rotation(float theta, const Vec3 &axis) {
+  Vec3 u = axis.unit();
+  float r = cos(theta / 2);
+  float i = sin(theta / 2);
+  return Quat(r, i*u.x, i*u.y, i*u.z);
+}
+
+Quat::Quat() {}
+Quat::Quat(float r_, float x_, float y_, float z_) :
+  r(r_), x(x_), y(y_), z(z_) {}
+Quat::Quat(const Quat &src) :
+  r(src.r), x(src.x), y(src.y), z(src.z) {}
+
+Quat Quat::unit() const {
+  float s = invSqrt(r*r + x*x + y*y + z*z);
+  return Quat(s*r, s*x, s*y, s*z);
+}
+
+Quat operator*(const Quat &a, const Quat &b) {
+  return Quat(
+    a.r*b.r - a.x*b.x - a.y*b.y - a.z-b.z,
+    a.r*b.x + a.x*b.r + a.y*b.z - a.z*b.y,
+    a.r*b.y - a.x*b.z + a.y*b.r + a.z*b.x,
+    a.r*b.z + a.x*b.y - a.y*b.x + a.z*b.r
+  );
+}
+
+std::ostream& operator<<(std::ostream& out, const Quat& q) {
+  out << q.r << '+' << q.x << "i+" << q.y << "j+" << q.z << 'k';
+  return out;
+}
+
+/*****************************************************************************
  * Misc                                                                      *
  *****************************************************************************/
 
@@ -399,7 +446,6 @@ Ray operator*(const Mat4 &m, const Ray &r) {
   return Ray(o.unHomogenize(), Vec3(d.x, d.y, d.z));
 }
 
-/*
 void assertMath() {
   Mat4 a(
      1,  2,  3,  4,
@@ -509,5 +555,10 @@ void assertMath() {
 
   assert(Vec4::ZERO + Vec4::UNIT_X + Vec4::UNIT_Y + Vec4::UNIT_Z +
     Vec4::UNIT_W == Vec4(1, 1, 1, 1));
+
+  Quat q1 = Quat::rotation(PI/2, Vec3(1,1,1));
+  Quat q2 = Quat::rotation(PI/2, -Vec3(2,2,2));
+  Quat q3 = q1 * q2;
+  Mat4 q3m = Mat4::rotation(q3);
+  assert(q3m == Mat4::IDENTITY);
 }
-*/

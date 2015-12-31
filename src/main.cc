@@ -291,6 +291,8 @@ int main() {
 #include <cmath>
 
 int submain() {
+  assertMath();
+
   if(!glfwInit()) {
     std::cout << "glfwInit failed" << std::endl;
     return 1;
