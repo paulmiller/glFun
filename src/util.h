@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define UNUSED(x) ((void)(x))
+
 // Based on BUILD_BUG_ON from kernel.h
 #define COMPILE_ASSERT(condition) ((void) sizeof(char[1 - 2*!(condition)]))
 

@@ -3,8 +3,6 @@
 
 #include <ostream>
 
-// TODO *= etc.
-
 class Mat4;
 class Vec3;
 class Vec4;
@@ -24,7 +22,7 @@ public:
   static const Mat4 IDENTITY;
 
   static Mat4 translation(const Vec3 &v);
-  static Mat4 rotation(float theta, const Vec3 &axis);
+  static Mat4 rotation(const Vec3 &axis, float angle);
   static Mat4 rotation(const Quat &q);
   static Mat4 scale(const Vec3 &v);
 
@@ -74,6 +72,9 @@ public:
   Vec3(const Vec3 &a);
 
   Vec3& operator=(const Vec3& a);
+  Vec3& operator+=(const Vec3 &b);
+  Vec3& operator-=(const Vec3 &b);
+  Vec3& operator*=(float s);
   float len() const;
   float len2() const;
   Vec3 unit() const;
@@ -115,7 +116,13 @@ public:
   Vec4(const Vec4 &a);
   Vec4(const Vec3 &a, float _w);
 
+  Vec4& operator=(const Vec4& a);
+  Vec4& operator+=(const Vec4 &b);
+  Vec4& operator-=(const Vec4 &b);
+  Vec4& operator*=(float s);
+
   Vec3 unHomogenize() const; // Normalize homogeneous coordinates
+  Vec3 dropW() const;
 };
 
 Vec4 operator-(const Vec4 &v);
@@ -134,13 +141,18 @@ std::ostream& operator<<(std::ostream& out, const Vec4& v);
 
 class Quat {
 public:
+  static const Quat IDENTITY;
+
   float r, x, y, z;
 
-  static Quat rotation(float theta, const Vec3 &axis);
+  static Quat rotation(const Vec3 &axis, float angle);
 
   Quat();
   Quat(float r_, float x_, float y_, float z_);
   Quat(const Quat &src);
+
+  Quat& operator=(const Quat& a);
+  Quat& operator*=(const Quat& b);
 
   Quat unit() const; // a.k.a. versor
 };

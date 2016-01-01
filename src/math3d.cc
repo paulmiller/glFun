@@ -32,7 +32,7 @@ Mat4 Mat4::translation(const Vec3 &v) {
   );
 }
 
-Mat4 Mat4::rotation(float theta, const Vec3 &axis) {
+Mat4 Mat4::rotation(const Vec3 &axis, float angle) {
   float xy = axis.x * axis.y;
   float xz = axis.x * axis.z;
   float yz = axis.y * axis.z;
@@ -41,8 +41,8 @@ Mat4 Mat4::rotation(float theta, const Vec3 &axis) {
   float y2 = axis.y * axis.y;
   float z2 = axis.z * axis.z;
 
-  float sinTheta = sin(theta);
-  float cosTheta = cos(theta);
+  float sinTheta = sin(angle);
+  float cosTheta = cos(angle);
 
   float xSinTheta = axis.x * sinTheta;
   float ySinTheta = axis.y * sinTheta;
@@ -259,6 +259,27 @@ Vec3& Vec3::operator=(const Vec3& a) {
   return *this;
 }
 
+Vec3& Vec3::operator+=(const Vec3 &b) {
+  x += b.x;
+  y += b.y;
+  z += b.z;
+  return *this;
+}
+
+Vec3& Vec3::operator-=(const Vec3 &b) {
+  x -= b.x;
+  y -= b.y;
+  z -= b.z;
+  return *this;
+}
+
+Vec3& Vec3::operator*=(float s) {
+  x *= s;
+  y *= s;
+  z *= s;
+  return *this;
+}
+
 float Vec3::len() const {
   return sqrt(len2());
 }
@@ -347,8 +368,44 @@ Vec4::Vec4(float _x, float _y, float _z, float _w)
 Vec4::Vec4(const Vec4 &a) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 Vec4::Vec4(const Vec3 &a, float _w) : x(a.x), y(a.y), z(a.z), w(_w) {}
 
+Vec4& Vec4::operator=(const Vec4& a) {
+  x = a.x;
+  y = a.y;
+  z = a.z;
+  w = a.w;
+  return *this;
+}
+
+Vec4& Vec4::operator+=(const Vec4 &b) {
+  x += b.x;
+  y += b.y;
+  z += b.z;
+  w += b.w;
+  return *this;
+}
+
+Vec4& Vec4::operator-=(const Vec4 &b) {
+  x -= b.x;
+  y -= b.y;
+  z -= b.z;
+  w -= b.w;
+  return *this;
+}
+
+Vec4& Vec4::operator*=(float s) {
+  x *= s;
+  y *= s;
+  z *= s;
+  w *= s;
+  return *this;
+}
+
 Vec3 Vec4::unHomogenize() const {
   return Vec3(x/w, y/w, z/w);
+}
+
+Vec3 Vec4::dropW() const {
+  return Vec3(x, y, z);
 }
 
 Vec4 operator-(const Vec4 &v) {
@@ -392,10 +449,12 @@ std::ostream& operator<<(std::ostream& out, const Vec4& v) {
  * Quat                                                                      *
  *****************************************************************************/
 
-Quat Quat::rotation(float theta, const Vec3 &axis) {
+const Quat Quat::IDENTITY(1, 0, 0, 0);
+
+Quat Quat::rotation(const Vec3 &axis, float angle) {
   Vec3 u = axis.unit();
-  float r = cos(theta / 2);
-  float i = sin(theta / 2);
+  float r = cos(angle / 2);
+  float i = sin(angle / 2);
   return Quat(r, i*u.x, i*u.y, i*u.z);
 }
 
@@ -408,6 +467,18 @@ Quat::Quat(const Quat &src) :
 Quat Quat::unit() const {
   float s = invSqrt(r*r + x*x + y*y + z*z);
   return Quat(s*r, s*x, s*y, s*z);
+}
+
+Quat& Quat::operator=(const Quat& a) {
+  r = a.r;
+  x = a.x;
+  y = a.y;
+  z = a.z;
+  return *this;
+}
+
+Quat& Quat::operator*=(const Quat& b) {
+  return (*this) = (*this) * b;
 }
 
 Quat operator*(const Quat &a, const Quat &b) {
@@ -556,8 +627,8 @@ void assertMath() {
   assert(Vec4::ZERO + Vec4::UNIT_X + Vec4::UNIT_Y + Vec4::UNIT_Z +
     Vec4::UNIT_W == Vec4(1, 1, 1, 1));
 
-  Quat q1 = Quat::rotation(PI/2, Vec3(1,1,1));
-  Quat q2 = Quat::rotation(PI/2, -Vec3(2,2,2));
+  Quat q1 = Quat::rotation(Vec3(1,1,1), PI/2);
+  Quat q2 = Quat::rotation(-Vec3(2,2,2), PI/2);
   Quat q3 = q1 * q2;
   Mat4 q3m = Mat4::rotation(q3);
   assert(q3m == Mat4::IDENTITY);

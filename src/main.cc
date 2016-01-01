@@ -3,6 +3,7 @@
 #include "image.h"
 #include "image_png.h"
 #include "mesh.h"
+#include "object.h"
 #include "ohno.h"
 #include "util.h"
 
@@ -25,9 +26,12 @@ const int defaultWidth = 512;
 const int defaultHeight = 512;
 
 Camera *cameraPtr;
+Object *cameraObjPtr;
 
-void framebufferSize(GLFWwindow *window, int width, int height) {
+void onFramebufferSize(GLFWwindow *window, int width, int height) {
+  UNUSED(window);
   assert(cameraPtr);
+
   float aspect = float(width) / float(height);
   float horizFOV = PI/2;
   cameraPtr->setResolution(width, height);
@@ -35,17 +39,80 @@ void framebufferSize(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-/*
-void mouseButton(GLFWwindow *window, int button, int action, int mods) {
-  assert(cameraPtr);
-}
-*/
+enum KeyCommand {
+  FORWARD,
+  BACKWARD,
+  STRAFE_LEFT,
+  STRAFE_RIGHT,
+  TURN_LEFT,
+  TURN_RIGHT,
+  UP,
+  DOWN,
+  ESCAPE
+};
 
-/*
-void cursorPos(GLFWwindow* window, double xpos, double ypos) {
-  assert(cameraPtr);
+class KeyInput {
+public:
+  const KeyCommand command;
+  const int code;
+  bool pressed;
+
+  KeyInput(KeyCommand command_, int code_) :
+    command(command_), code(code_), pressed(false) {};
+};
+
+KeyInput controls[] = {
+  {FORWARD,      GLFW_KEY_COMMA},
+  {BACKWARD,     GLFW_KEY_O},
+  {STRAFE_LEFT,  GLFW_KEY_A},
+  {STRAFE_RIGHT, GLFW_KEY_E},
+  {TURN_LEFT,    GLFW_KEY_APOSTROPHE},
+  {TURN_RIGHT,   GLFW_KEY_PERIOD},
+  {UP,           GLFW_KEY_SPACE},
+  {DOWN,         GLFW_KEY_SEMICOLON},
+  {ESCAPE,       GLFW_KEY_ESCAPE}
+};
+
+const int controlNum = sizeof(controls) / sizeof(KeyInput);
+
+bool getCommandState(KeyCommand command) {
+  for(int i = 0; i < controlNum; i++) {
+    if(command == controls[i].command)
+      return controls[i].pressed;
+  }
+  assert(0);
+  return false;
 }
-*/
+
+void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  UNUSED(window);
+  UNUSED(scancode);
+  UNUSED(mods);
+
+  for(int i = 0; i < controlNum; i++) {
+    if(key == controls[i].code) {
+      if(action == GLFW_PRESS)
+        controls[i].pressed = true;
+      else if(action == GLFW_RELEASE)
+        controls[i].pressed = false;
+      break;
+    }
+  }
+}
+
+void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
+  UNUSED(window);
+  UNUSED(button);
+  UNUSED(action);
+  UNUSED(mods);
+}
+
+void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
+  UNUSED(window);
+  UNUSED(xpos);
+  UNUSED(ypos);
+  assert(cameraObjPtr);
+}
 
 GLuint loadShader(const char *sourceName, GLenum shaderType) {
   assert(shaderType == GL_VERTEX_SHADER || shaderType == GL_FRAGMENT_SHADER);
@@ -288,8 +355,6 @@ int main() {
   }
 }
 
-#include <cmath>
-
 int submain() {
   assertMath();
 
@@ -319,10 +384,14 @@ int submain() {
 
   Camera camera;
   cameraPtr = &camera;
-  framebufferSize(window, defaultWidth, defaultHeight);
-  glfwSetFramebufferSizeCallback(window, framebufferSize);
-  //glfwSetMouseButtonCallback(window, mouseButton);
-  //glfwSetCursorPosCallback(window, cursorPos);
+  Object cameraObj;
+  cameraObjPtr = &cameraObj;
+  cameraObj.pos = Vec3(0, 0, 2);
+  onFramebufferSize(window, defaultWidth, defaultHeight);
+  glfwSetFramebufferSizeCallback(window, onFramebufferSize);
+  glfwSetKeyCallback(window, onKey);
+  glfwSetMouseButtonCallback(window, onMouseButton);
+  glfwSetCursorPosCallback(window, onCursorPos);
 
   assert(checkGL());
 
@@ -382,9 +451,49 @@ int submain() {
   glClearDepth(-1.0f);
 
   int64_t frame = 0;
-  while(!glfwWindowShouldClose(window)) {
-    double t = sin(frame / 100.0);
-    camera.lookAt(Vec3(2*sin(t), 0.5, 2*cos(t)), Vec3::ZERO, Vec3::UNIT_Y);
+  while(!glfwWindowShouldClose(window) && !getCommandState(ESCAPE)) {
+    //double t = sin(frame / 100.0);
+    //camera.lookAt(Vec3(2*sin(t), 0.5, 2*cos(t)), Vec3::ZERO, Vec3::UNIT_Y);
+
+    bool goingForward  = getCommandState(FORWARD);
+    bool goingBackward = getCommandState(BACKWARD);
+    bool goingLeft     = getCommandState(STRAFE_LEFT);
+    bool goingRight    = getCommandState(STRAFE_RIGHT);
+    bool goingUp       = getCommandState(UP);
+    bool goingDown     = getCommandState(DOWN);
+
+    Vec3 move = Vec3::ZERO;
+
+    if(goingForward && !goingBackward)
+      move += Vec3(0, 0, -1);
+    else if(goingBackward && !goingForward)
+      move += Vec3(0, 0, 1);
+
+    if(goingLeft && !goingRight)
+      move += Vec3(-1, 0, 0);
+    else if(goingRight && !goingLeft)
+      move += Vec3(1, 0, 0);
+
+    if(goingUp && !goingDown)
+      move += Vec3(0, 1, 0);
+    else if(goingDown && !goingUp)
+      move += Vec3(0, -1, 0);
+
+    if(move != Vec3::ZERO) {
+      move = move.unit() * 0.05;
+      cameraObj.moveLocal(move);
+    }
+
+    bool turningLeft  = getCommandState(TURN_LEFT);
+    bool turningRight = getCommandState(TURN_RIGHT);
+
+    if(turningLeft && !turningRight)
+      cameraObj.rot *= Quat::rotation(Vec3::UNIT_Y, 0.03);
+    else if(turningRight && !turningLeft)
+      cameraObj.rot *= Quat::rotation(Vec3::UNIT_Y, -0.03);
+
+    Vec3 forward = (Mat4::rotation(cameraObj.rot) * -Vec4::UNIT_Z).dropW();
+    camera.look(cameraObj.pos, forward, Vec3::UNIT_Y);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

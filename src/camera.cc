@@ -73,11 +73,41 @@ void Camera::setFrustum(
   );
 }
 
-void Camera::lookAt(const Vec3 &eye, const Vec3 &center, const Vec3 &up) {
+void Camera::look(const Vec3 &eye, const Vec3 &forward, const Vec3 &up) {
+  // Camera-space basis vectors
+  Vec3 b = -forward.unit(); // backwards
+  Vec3 r = cross(up, b).unit(); // right
+  Vec3 u = cross(b, r); // true up
+
+  const Vec3 &e = eye;
+
+  mView = Mat4(
+    r.x, r.y, r.z, 0,
+    u.x, u.y, u.z, 0,
+    b.x, b.y, b.z, 0,
+      0,   0,   0, 1
+  ) * Mat4(
+    1, 0, 0, -e.x,
+    0, 1, 0, -e.y,
+    0, 0, 1, -e.z,
+    0, 0, 0,    1
+  );
+
+  mInvView = Mat4(
+    r.x, u.x, b.x, e.x,
+    r.y, u.y, b.y, e.y,
+    r.z, u.z, b.z, e.z,
+      0,   0,   0,   1
+  );
+}
+
+void Camera::lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up) {
+  look(eye, target - eye, up);
+  /*
   Vec3 e = eye;
 
   // Camera-space basis vectors
-  Vec3 b = (e - center).unit(); // backwards
+  Vec3 b = (e - target).unit(); // backwards
   Vec3 r = cross(up, b).unit(); // right
   Vec3 u = cross(b, r); // true up
 
@@ -99,6 +129,7 @@ void Camera::lookAt(const Vec3 &eye, const Vec3 &center, const Vec3 &up) {
     r.z, u.z, b.z, e.z,
       0,   0,   0,   1
   );
+  */
 }
 
 Mat4 Camera::getTransform() const {
