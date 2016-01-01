@@ -3,6 +3,8 @@
 
 #include <ostream>
 
+// all angles in radians
+
 class Mat4;
 class Vec3;
 class Vec4;
@@ -86,7 +88,7 @@ Vec3 unit();
 float dot(const Vec3 &a , const Vec3 &b);
 Vec3 cross(const Vec3 &a, const Vec3 &b);
 Vec3 proj(const Vec3 &a, const Vec3 &b); // projection of a onto b
-float angleBetween(const Vec3 &a, const Vec3 &b); // in radians
+float angleBetween(const Vec3 &a, const Vec3 &b);
 Vec3 operator-(const Vec3 &v);
 Vec3 operator+(const Vec3 &a, const Vec3 &b);
 Vec3 operator-(const Vec3 &a, const Vec3 &b);

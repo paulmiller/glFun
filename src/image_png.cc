@@ -142,22 +142,6 @@ Image loadPng(std::istream &input) {
     png_set_palette_to_rgb(pngStruct);
   }
 
-  /*
-  if(colorType & PNG_COLOR_MASK_COLOR) {
-    if(colorType & PNG_COLOR_MASK_ALPHA) {
-      type = (bitDepth <= 8) ? Pixel::RGBA8 : Pixel::RGBA16;
-    } else {
-      type = (bitDepth <= 8) ? Pixel::RGB8 : Pixel::RGB16;
-    }
-  } else {
-    if(colorType & PNG_COLOR_MASK_ALPHA) {
-      type = (bitDepth <= 8) ? Pixel::VA8 : Pixel::VA16;
-    } else {
-      type = (bitDepth <= 8) ? Pixel::V8 : Pixel::V16;
-    }
-  }
-  */
-
   bool hasAlpha = colorType & PNG_COLOR_MASK_ALPHA;
   if(png_get_valid(pngStruct, pngInfo, PNG_INFO_tRNS)) {
     png_set_tRNS_to_alpha(pngStruct);

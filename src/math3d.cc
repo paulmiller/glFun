@@ -304,13 +304,11 @@ Vec3 cross(const Vec3 &a, const Vec3 &b) {
   );
 }
 
-// projection of a onto b
 Vec3 proj(const Vec3 &a, const Vec3 &b) {
   Vec3 b1 = b.unit();
   return dot(a, b1) * b1;
 }
 
-// in radians
 float angleBetween(const Vec3 &a, const Vec3 &b) {
   return acos( dot(a, b) / (a.len() * b.len()) );
 }
