@@ -1,5 +1,7 @@
 #include "bytes.h"
 
+#include "ohno.h"
+
 #include <cassert>
 #include <cstring> // for memset
 #include <fstream>
@@ -39,9 +41,8 @@ char& Bytes::operator[](size_t i) {
 
 Bytes Bytes::loadFile(const char *fileName) {
   std::ifstream input(fileName, std::ifstream::binary);
-  if(input.bad()) {
-    std::cout << "error opening file " << fileName;
-  }
+  if(input.bad())
+    throw OHNO("couldn't open file");
 
   input.seekg(0, input.end);
   size_t size = input.tellg();
@@ -49,8 +50,7 @@ Bytes Bytes::loadFile(const char *fileName) {
 
   Bytes bytes(size + 1); // +1 for null-terminator
   input.read(bytes.get(), size);
-  if(input.bad()) {
-    std::cout << "error reading file " << fileName;
-  }
+  if(input.bad())
+    throw OHNO("couldn't read file");
   return bytes;
 }
