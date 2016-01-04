@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "gl_util.h"
 #include "image.h"
+#include "image_hdr.h"
 #include "image_png.h"
 #include "mesh.h"
 #include "object.h"
@@ -121,6 +122,22 @@ int main() {
 
 int submain() {
   assertMath();
+
+  Image testFlip(3, 3, Pixel::V8_T);
+  int n = 1;
+  for(int r = 0; r < 3; r++) {
+    for(int c = 0; c < 3; c++) {
+      ((Pixel::V8*) testFlip.getPixelPtr(r, c))->V = n;
+      n++;
+    }
+  }
+  std::cout << testFlip;
+  Fliperator testFlipper(&testFlip, true, true, true);
+  while(!testFlipper.isDone()) {
+    std::cout << (int) ((Pixel::V8*) *testFlipper)->V << ' ';
+    ++testFlipper;
+  }
+  std::cout << std::endl;
 
   if(!glfwInit()) {
     std::cout << "glfwInit failed" << std::endl;

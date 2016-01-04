@@ -175,16 +175,16 @@ namespace {
   // https://www.opengl.org/registry/doc/glspec45.core.pdf table 8.9 pg 226
   GLuint px2glInternalFormat(Pixel::Type t) {
     switch(t) {
-      case Pixel::V8:     return GL_R8;
-      case Pixel::V16:    return GL_R16;
-      case Pixel::RGB8:   return GL_RGBA8;
-      case Pixel::RGB16:  return GL_RGBA16;
-      case Pixel::RGBA8:  return GL_RGBA8;
-      case Pixel::RGBA16: return GL_RGBA16;
+      case Pixel::V8_T:     return GL_R8;
+      case Pixel::V16_T:    return GL_R16;
+      case Pixel::RGB8_T:   return GL_RGBA8;
+      case Pixel::RGB16_T:  return GL_RGBA16;
+      case Pixel::RGBA8_T:  return GL_RGBA8;
+      case Pixel::RGBA16_T: return GL_RGBA16;
 
-      case Pixel::NONE:
-      case Pixel::VA8:
-      case Pixel::VA16:
+      case Pixel::NONE_T:
+      case Pixel::VA8_T:
+      case Pixel::VA16_T:
         throw OHNO("bad pixel type");
 
       default:
@@ -196,19 +196,19 @@ namespace {
   // https://www.opengl.org/registry/doc/glspec45.core.pdf table 8.3 pg 183
   GLuint px2glFormat(Pixel::Type t) {
     switch(t) {
-      case Pixel::V8:
-      case Pixel::V16:
+      case Pixel::V8_T:
+      case Pixel::V16_T:
         return GL_RED;
-      case Pixel::RGB8:
-      case Pixel::RGB16:
+      case Pixel::RGB8_T:
+      case Pixel::RGB16_T:
         return GL_RGB;
-      case Pixel::RGBA8:
-      case Pixel::RGBA16:
+      case Pixel::RGBA8_T:
+      case Pixel::RGBA16_T:
         return GL_RGBA;
 
-      case Pixel::NONE:
-      case Pixel::VA8:
-      case Pixel::VA16:
+      case Pixel::NONE_T:
+      case Pixel::VA8_T:
+      case Pixel::VA16_T:
         throw OHNO("bad pixel type");
 
       default:
@@ -220,18 +220,18 @@ namespace {
   // https://www.opengl.org/registry/doc/glspec45.core.pdf table 8.2 pg 182
   GLuint px2glType(Pixel::Type t) {
     switch(t) {
-      case Pixel::V8:
-      case Pixel::VA8:
-      case Pixel::RGB8:
-      case Pixel::RGBA8:
+      case Pixel::V8_T:
+      case Pixel::VA8_T:
+      case Pixel::RGB8_T:
+      case Pixel::RGBA8_T:
         return GL_UNSIGNED_BYTE;
-      case Pixel::V16:
-      case Pixel::VA16:
-      case Pixel::RGB16:
-      case Pixel::RGBA16:
+      case Pixel::V16_T:
+      case Pixel::VA16_T:
+      case Pixel::RGB16_T:
+      case Pixel::RGBA16_T:
         return GL_UNSIGNED_SHORT;
 
-      case Pixel::NONE:
+      case Pixel::NONE_T:
         throw OHNO("bad pixel type");
 
       default:

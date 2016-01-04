@@ -88,24 +88,20 @@ namespace {
 Image loadPng(std::istream &input) {
   char signature[PNG_SIG_SIZE];
   input.read(signature, PNG_SIG_SIZE);
-  if(!input.good()) {
-    throw OHNO("Couldn't read PNG signature");
-  }
+  if(!input.good())
+    throw OHNO("couldn't read PNG signature");
   if(png_sig_cmp(reinterpret_cast<png_const_bytep>(signature),
-      0, PNG_SIG_SIZE)) {
+      0, PNG_SIG_SIZE))
     throw OHNO("PNG signature doesn't match");
-  }
 
   PngReadStruct pngStruct(nullptr, nullptr, nullptr);
 
   png_infop pngInfo = png_create_info_struct(pngStruct);
-  if(!pngInfo) {
+  if(!pngInfo)
     throw OHNO("png_create_info_struct failed");
-  }
 
-  if(setjmp(png_jmpbuf(pngStruct))) {
+  if(setjmp(png_jmpbuf(pngStruct)))
     throw OHNO("got PNG long jump");
-  }
 
   png_set_read_fn(pngStruct, &input, readPngStream);
   png_set_sig_bytes(pngStruct, PNG_SIG_SIZE);
@@ -151,15 +147,15 @@ Image loadPng(std::istream &input) {
   Pixel::Type type;
   if(hasAlpha) {
     if(colorType & PNG_COLOR_MASK_COLOR) {
-      type = (bitDepth <= 8) ? Pixel::RGBA8 : Pixel::RGBA16;
+      type = (bitDepth <= 8) ? Pixel::RGBA8_T : Pixel::RGBA16_T;
     } else {
-      type = (bitDepth <= 8) ? Pixel::VA8 : Pixel::VA16;
+      type = (bitDepth <= 8) ? Pixel::VA8_T : Pixel::VA16_T;
     }
   } else {
     if(colorType & PNG_COLOR_MASK_COLOR) {
-      type = (bitDepth <= 8) ? Pixel::RGB8 : Pixel::RGB16;
+      type = (bitDepth <= 8) ? Pixel::RGB8_T : Pixel::RGB16_T;
     } else {
-      type = (bitDepth <= 8) ? Pixel::V8 : Pixel::V16;
+      type = (bitDepth <= 8) ? Pixel::V8_T : Pixel::V16_T;
     }
   }
 

@@ -31,4 +31,3 @@ bool hasPrefix(const char *prefix, const char *str) {
   }
   return true;
 }
-

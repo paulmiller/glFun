@@ -4,74 +4,58 @@
 #include <cstdint>
 #include <ostream>
 
-class Pixel {
-public:
-  // RTTI in every pixel would balloon image size, so we track pixel types
-  // manually.
+namespace Pixel {
+  /*
+  Pixel naming scheme:
+    V  = value (greyscale)
+    A  = alpha
+    R  = red
+    G  = green
+    B  = blue
+    E  = exponent (shared by colors if present)
+    8  = uint8_t
+    16 = uint16_t
+    f  = float
+  */
   enum Type {
-    NONE = 0,
-    V8,
-    V16,
-    VA8,
-    VA16,
-    RGB8,
-    RGB16,
-    RGBA8,
-    RGBA16,
+    NONE_T = 0,
+    V8_T,
+    V16_T,
+    VA8_T,
+    VA16_T,
+    RGB8_T,
+    RGB16_T,
+    RGBA8_T,
+    RGBA16_T,
+    RGBE8_T,
+    RGBf_T,
   };
 
-  static std::size_t size(Type t);
-  static const char * name(Type t);
+  std::size_t size(Type t);
+  const char * name(Type t);
+
+  class V8     { public: uint8_t  V;                                        };
+  class V16    { public: uint16_t V;                                        };
+  class VA8    { public: uint8_t  V, A;       uint8_t  & operator[](int i); };
+  class VA16   { public: uint16_t V, A;       uint16_t & operator[](int i); };
+  class RGB8   { public: uint8_t  R, G, B;    uint8_t  & operator[](int i); };
+  class RGB16  { public: uint16_t R, G, B;    uint16_t & operator[](int i); };
+  class RGBA8  { public: uint8_t  R, G, B, A; uint8_t  & operator[](int i); };
+  class RGBA16 { public: uint16_t R, G, B, A; uint16_t & operator[](int i); };
+  class RGBE8  { public: uint8_t  R, G, B, E; uint8_t  & operator[](int i); };
+  class RGBf   { public: float    R, G, B;    float    & operator[](int i); };
 };
 
-class PixelV8 : public Pixel {
-public:
-  uint8_t V;
-};
-
-class PixelV16 : public Pixel {
-public:
-  uint16_t V;
-};
-
-class PixelVA8 : public Pixel {
-public:
-  uint8_t V, A;
-};
-
-class PixelVA16 : public Pixel {
-public:
-  uint16_t V, A;
-};
-
-class PixelRGB8 : public Pixel {
-public:
-  uint8_t R, G, B;
-};
-
-class PixelRGB16 : public Pixel {
-public:
-  uint16_t R, G, B;
-};
-
-class PixelRGBA8 : public Pixel {
-public:
-  uint8_t R, G, B, A;
-};
-
-class PixelRGBA16 : public Pixel {
-public:
-  uint16_t R, G, B, A;
-};
-
-std::ostream& operator<<(std::ostream & o, const PixelV8 & p);
-std::ostream& operator<<(std::ostream & o, const PixelV16 & p);
-std::ostream& operator<<(std::ostream & o, const PixelVA8 & p);
-std::ostream& operator<<(std::ostream & o, const PixelVA16 & p);
-std::ostream& operator<<(std::ostream & o, const PixelRGB8 & p);
-std::ostream& operator<<(std::ostream & o, const PixelRGB16 & p);
-std::ostream& operator<<(std::ostream & o, const PixelRGBA8 & p);
-std::ostream& operator<<(std::ostream & o, const PixelRGBA16 & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::V8     & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::V16    & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::VA8    & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::VA16   & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGB8   & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGB16  & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBA8  & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBA16 & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8  & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBf   & p);
 
 // Images are stored in row-major order. Lower rows are "up", higher rows are
 // "down", lower columns are "left", and higher columns are "right".
@@ -96,6 +80,34 @@ public:
   void *getRowPtr(int row);
   void *getPixelPtr(int row, int col);
   const void *getPixelPtr(int row, int col) const;
+
+};
+
+// iterate over pixels in an Image in a configurable order
+class Fliperator {
+private:
+  Image* mImage;
+  int mRow, mCol;
+  bool mRowMajor, mRowOrder, mColOrder, mDone;
+
+  bool advanceRow();
+  bool advanceCol();
+
+public:
+  // rowMajor - if true, iterate in row-major order
+  // rowOrder - if true, iterate from top to bottom
+  // colOrder - if true, iterate from left to right
+  // e.g.
+  // (true, true, true) - left to right, then top to bottom (normal)
+  // (true, true, false) - right to left, then top to bottom (horizontal flip)
+  // (false, true, true) - top to bottom, then left to right (diagonal flip)
+  // (false, false, false) - bottom to top, then right to left (diagonal flip)
+  // (false, false, true) - bottom to top, then left to right (rotation)
+  Fliperator(Image* image, bool rowMajor, bool rowOrder, bool colOrder);
+
+  void* operator*();
+  Fliperator& operator++();
+  bool isDone();
 };
 
 std::ostream& operator<<(std::ostream& out, const Image& image);
