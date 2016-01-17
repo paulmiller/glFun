@@ -5,6 +5,7 @@
 
 #include <istream>
 
-Image loadPng(std::istream &input);
+Image readPng(std::istream &input);
+void writePng(std::ostream &output, Image &img);
 
 #endif

@@ -243,7 +243,7 @@ namespace {
 
 GLuint pngTex(const char *pngName) {
   std::ifstream input(pngName, std::ifstream::binary);
-  Image texImg = loadPng(input);
+  Image texImg = readPng(input);
   Pixel::Type type = texImg.type();
 
   GLuint texId;

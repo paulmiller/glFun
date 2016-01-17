@@ -34,16 +34,16 @@ namespace Pixel {
   std::size_t size(Type t);
   const char * name(Type t);
 
-  class V8     { public: uint8_t  V;                                        };
-  class V16    { public: uint16_t V;                                        };
-  class VA8    { public: uint8_t  V, A;       uint8_t  & operator[](int i); };
-  class VA16   { public: uint16_t V, A;       uint16_t & operator[](int i); };
-  class RGB8   { public: uint8_t  R, G, B;    uint8_t  & operator[](int i); };
-  class RGB16  { public: uint16_t R, G, B;    uint16_t & operator[](int i); };
-  class RGBA8  { public: uint8_t  R, G, B, A; uint8_t  & operator[](int i); };
-  class RGBA16 { public: uint16_t R, G, B, A; uint16_t & operator[](int i); };
-  class RGBE8  { public: uint8_t  R, G, B, E; uint8_t  & operator[](int i); };
-  class RGBf   { public: float    R, G, B;    float    & operator[](int i); };
+  struct V8     { uint8_t  V;                                        };
+  struct V16    { uint16_t V;                                        };
+  struct VA8    { uint8_t  V, A;       uint8_t  & operator[](int i); };
+  struct VA16   { uint16_t V, A;       uint16_t & operator[](int i); };
+  struct RGB8   { uint8_t  R, G, B;    uint8_t  & operator[](int i); };
+  struct RGB16  { uint16_t R, G, B;    uint16_t & operator[](int i); };
+  struct RGBf   { float    R, G, B;    float    & operator[](int i); };
+  struct RGBA8  { uint8_t  R, G, B, A; uint8_t  & operator[](int i); };
+  struct RGBA16 { uint16_t R, G, B, A; uint16_t & operator[](int i); };
+  struct RGBE8  { uint8_t  R, G, B, E; uint8_t  & operator[](int i); };
 };
 
 std::ostream& operator<<(std::ostream & o, const Pixel::V8     & p);
@@ -52,10 +52,10 @@ std::ostream& operator<<(std::ostream & o, const Pixel::VA8    & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::VA16   & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::RGB8   & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::RGB16  & p);
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBf   & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::RGBA8  & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::RGBA16 & p);
 std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8  & p);
-std::ostream& operator<<(std::ostream & o, const Pixel::RGBf   & p);
 
 // Images are stored in row-major order. Lower rows are "up", higher rows are
 // "down", lower columns are "left", and higher columns are "right".
@@ -71,6 +71,7 @@ public:
   Image(int width, int height, Pixel::Type type); // Create initialized image
   Image(Image&& src);
   ~Image();
+  Image& operator=(Image&& src);
   void init(int width, int height, Pixel::Type type);
   void clear();
   int width() const;
@@ -80,7 +81,6 @@ public:
   void *getRowPtr(int row);
   void *getPixelPtr(int row, int col);
   const void *getPixelPtr(int row, int col) const;
-
 };
 
 // iterate over pixels in an Image in a configurable order

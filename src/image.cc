@@ -13,10 +13,10 @@ std::size_t Pixel::size(Type t) {
     case VA16_T:   return sizeof(Pixel::VA16);
     case RGB8_T:   return sizeof(Pixel::RGB8);
     case RGB16_T:  return sizeof(Pixel::RGB16);
+    case RGBf_T:   return sizeof(Pixel::RGBf);
     case RGBA8_T:  return sizeof(Pixel::RGBA8);
     case RGBA16_T: return sizeof(Pixel::RGBA16);
     case RGBE8_T:  return sizeof(Pixel::RGBE8);
-    case RGBf_T:   return sizeof(Pixel::RGBf);
 
     default:
       assert(0);
@@ -33,10 +33,10 @@ const char * Pixel::name(Type t) {
     case VA16_T:   return "VA16";
     case RGB8_T:   return "RGB8";
     case RGB16_T:  return "RGB16";
+    case RGBf_T:   return "RGBf";
     case RGBA8_T:  return "RGBA8";
     case RGBA16_T: return "RGBA16";
     case RGBE8_T:  return "RGBE8";
-    case RGBf_T:   return "RGBf";
 
     default:
       assert(0);
@@ -64,6 +64,11 @@ uint16_t& Pixel::RGB16::operator[](int i) {
   return (&R)[i];
 }
 
+float& Pixel::RGBf::operator[](int i) {
+  assert(0 <= i && i < 4);
+  return (&R)[i];
+}
+
 uint8_t& Pixel::RGBA8::operator[](int i) {
   assert(0 <= i && i < 4);
   return (&R)[i];
@@ -75,11 +80,6 @@ uint16_t& Pixel::RGBA16::operator[](int i) {
 }
 
 uint8_t& Pixel::RGBE8::operator[](int i) {
-  assert(0 <= i && i < 4);
-  return (&R)[i];
-}
-
-float& Pixel::RGBf::operator[](int i) {
   assert(0 <= i && i < 4);
   return (&R)[i];
 }
@@ -126,6 +126,13 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGB16 & p) {
   return o;
 }
 
+std::ostream& operator<<(std::ostream & o, const Pixel::RGBf & p) {
+  char buf[sizeof("-0.000e+00/-0.000e+00/-0.000e+00")];
+  snprintf(buf, sizeof(buf), "%.3e/%.3e/%.3e", p.R, p.G, p.B);
+  o << buf;
+  return o;
+}
+
 std::ostream& operator<<(std::ostream & o, const Pixel::RGBA8 & p) {
   char buf[sizeof("00-00-00-00")];
   snprintf(buf, sizeof(buf), "%02x-%02x-%02x-%02x", p.R, p.G, p.B, p.A);
@@ -147,13 +154,6 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8 & p) {
   return o;
 }
 
-std::ostream& operator<<(std::ostream & o, const Pixel::RGBf & p) {
-  char buf[sizeof("-0.000e+00/-0.000e+00/-0.000e+00")];
-  snprintf(buf, sizeof(buf), "%.3e/%.3e/%.3e", p.R, p.G, p.B);
-  o << buf;
-  return o;
-}
-
 Image::Image() :
   mData(nullptr), mType(Pixel::NONE_T), mWidth(0), mHeight(0) {}
 
@@ -169,6 +169,22 @@ Image::Image(Image&& src) :
 
 Image::~Image() {
   delete[] mData;
+}
+
+Image& Image::operator=(Image&& src) {
+  delete[] mData;
+
+  mData = src.mData;
+  mType = src.mType;
+  mWidth = src.mWidth;
+  mHeight = src.mHeight;
+
+  src.mData = nullptr;
+  src.mType = Pixel::NONE_T;
+  src.mWidth = 0;
+  src.mHeight = 0;
+
+  return *this;
 }
 
 void Image::init(int width, int height, Pixel::Type type) {
@@ -315,14 +331,17 @@ std::ostream& operator<<(std::ostream& o, const Image& image) {
 
       const void *p = image.getPixelPtr(r, c);
       switch(type) {
-        case Pixel::V8_T:     o << *static_cast<const Pixel::V8 *>(p); break;
-        case Pixel::V16_T:    o << *static_cast<const Pixel::V16 *>(p); break;
-        case Pixel::VA8_T:    o << *static_cast<const Pixel::VA8 *>(p); break;
-        case Pixel::VA16_T:   o << *static_cast<const Pixel::VA16 *>(p); break;
-        case Pixel::RGB8_T:   o << *static_cast<const Pixel::RGB8 *>(p); break;
-        case Pixel::RGB16_T:  o << *static_cast<const Pixel::RGB16 *>(p); break;
-        case Pixel::RGBA8_T:  o << *static_cast<const Pixel::RGBA8 *>(p); break;
-        case Pixel::RGBA16_T: o << *static_cast<const Pixel::RGBA16 *>(p); break;
+        using namespace Pixel;
+        case V8_T:     o << *static_cast<const V8     *>(p); break;
+        case V16_T:    o << *static_cast<const V16    *>(p); break;
+        case VA8_T:    o << *static_cast<const VA8    *>(p); break;
+        case VA16_T:   o << *static_cast<const VA16   *>(p); break;
+        case RGB8_T:   o << *static_cast<const RGB8   *>(p); break;
+        case RGB16_T:  o << *static_cast<const RGB16  *>(p); break;
+        case RGBf_T:   o << *static_cast<const RGBf   *>(p); break;
+        case RGBA8_T:  o << *static_cast<const RGBA8  *>(p); break;
+        case RGBA16_T: o << *static_cast<const RGBA16 *>(p); break;
+        case RGBE8_T:  o << *static_cast<const RGBE8  *>(p); break;
 
         default:
           assert(0);
