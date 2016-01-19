@@ -5,6 +5,7 @@ srcs = [
   'camera',
   'gl_util',
   'image',
+  'image_hdr',
   'image_png',
   'main',
   'math3d',
