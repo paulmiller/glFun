@@ -7,12 +7,142 @@
 #include <cstring>
 #include <iostream>
 #include <istream>
+#include <vector>
 
-#include <cassert>
+/* example to convert HDR to PNG:
+
+  std::ifstream testHdrInput("probes/uffizi_probe.hdr", std::ifstream::binary);
+  Image testHdr;
+  try {
+    testHdr = readHdr(testHdrInput);
+  } catch(OhNo ohno) {
+    std::cout << ohno << std::endl;
+  }
+  assert(testHdr.type() == Pixel::RGBE8_T);
+  float max = -INFINITY;
+  float min = INFINITY;
+  Image testF(testHdr.width(), testHdr.height(), Pixel::RGBf_T);
+  for(int r = 0; r < testHdr.height(); r++) {
+    for(int c = 0; c < testHdr.width(); c++) {
+      Pixel::RGBE8* src = static_cast<Pixel::RGBE8*>(testHdr.getPixelPtr(r, c));
+      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(testF.getPixelPtr(r, c));
+      dst->R = float(src->R) * pow(2.0f, float(src->E) - 100);
+      dst->G = float(src->G) * pow(2.0f, float(src->E) - 100);
+      dst->B = float(src->B) * pow(2.0f, float(src->E) - 100);
+      if(std::isfinite(dst->R)) { max=std::max(max,dst->R); min=std::min(min,dst->R); }
+      if(std::isfinite(dst->G)) { max=std::max(max,dst->G); min=std::min(min,dst->G); }
+      if(std::isfinite(dst->B)) { max=std::max(max,dst->B); min=std::min(min,dst->B); }
+    }
+  }
+  std::cout << "min=" << min << " max=" << max << '\n';
+  for(int r = 0; r < testHdr.height(); r++) {
+    for(int c = 0; c < testHdr.width(); c++) {
+      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(testF.getPixelPtr(r, c));
+      dst->R /= max;
+      dst->G /= max;
+      dst->B /= max;
+    }
+  }
+  Image testPng(testHdr.width(), testHdr.height(), Pixel::RGB8_T);
+  for(int r = 0; r < testHdr.height(); r++) {
+    for(int c = 0; c < testHdr.width(); c++) {
+      Pixel::RGBf* src = static_cast<Pixel::RGBf*>(testF.getPixelPtr(r, c));
+      Pixel::RGB8* dst = static_cast<Pixel::RGB8*>(testPng.getPixelPtr(r, c));
+      dst->R = uint8_t(src->R * 255.0f);
+      dst->G = uint8_t(src->G * 255.0f);
+      dst->B = uint8_t(src->B * 255.0f);
+    }
+  }
+  std::ofstream testOut("test.png", std::ifstream::binary);
+  writePng(testOut, testPng);
+
+*/
 
 namespace {
   const char HDR_SIG[] = "#?RADIANCE";
   const size_t HDR_SIG_BYTES = sizeof(HDR_SIG) - 1;
+
+  bool isNewRLEBeginCode(Pixel::RGBE8 code) {
+    // in the new RLE scheme, a line starts with 2 bytes set to 2, and then the
+    // upper and then lower byte of the image width, which must be < 0x8000
+    return code.R == 2 && code.G == 2 && code.B < 0x80;
+  }
+
+  bool isOldRLERepeatCode(Pixel::RGBE8 code) {
+    // in the old RLE scheme, a run was indicated by a pixel with all channels
+    // set to 1
+    return code.R == 1 && code.G == 1 && code.B == 1;
+  }
+
+  bool isNormalized(Pixel::RGBE8 px) {
+    // the most-significant bit should be set in at least 1 channel
+    return (px.R | px.G | px.B) & 0x80;
+  }
+
+  // read a scanline of pixel data according to the new RLE scheme, not
+  // counting the begin code
+  void scanNewRLE(std::istream& input, std::vector<Pixel::RGBE8>& scanline) {
+    int scanlineSize = scanline.size();
+    for(int channel = 0; channel < 4; channel++) {
+      for(int i = 0; i < scanlineSize;) {
+        uint8_t code;
+        input.read(reinterpret_cast<char*>(&code), sizeof(code));
+        if(input.fail())
+          throw OHNO("HDR read code failed");
+        int length = (code > 0x80) ? (code & 0x7f) : code;
+        if(i + length > scanlineSize)
+          throw OHNO("HDR new RLE overrun");
+        // The Radiance filefmts.pdf claims a code with the high bit set
+        // indicates a run. The Radiance code in color.c shows this is not
+        // quite correct; it uses (code > 128) to check for a run, meaning a
+        // byte with the high bit AND at least 1 other bit set indicates a
+        // run. A code of exactly 128 is a non-run.
+        if(code > 0x80) {
+          // run
+          uint8_t value;
+          input.read(reinterpret_cast<char*>(&value), sizeof(value));
+          if(input.fail())
+            throw OHNO("HDR read fail during run");
+          for(int j = 0; j < length; j++)
+            scanline[i++][channel] = value;
+        } else {
+          // non-run
+          uint8_t value;
+          for(int j = 0; j < length; j++) {
+            input.read(reinterpret_cast<char*>(&value), sizeof(value));
+            if(input.fail())
+              throw OHNO("HDR read fail during non-run");
+            scanline[i++][channel] = value;
+          }
+        }
+      }
+    }
+  }
+
+  // read a scanline of pixel data
+  void scanRLE(std::istream& input, std::vector<Pixel::RGBE8>& scanline) {
+    Pixel::RGBE8 next;
+    int scanlineSize = scanline.size();
+    for(int i = 0; i < scanlineSize; i++) {
+      input.read(reinterpret_cast<char*>(&next), sizeof(next));
+      if(input.fail())
+        throw OHNO("HDR next pixel read fail");
+
+      if(isNewRLEBeginCode(next)) {
+        if(i != 0)
+          throw OHNO("HDR new RLE indicator not at start of line");
+        if(scanlineSize != ((next.B << 8) | next.E))
+          throw OHNO("HDR new RLE wrong length");
+        scanNewRLE(input, scanline);
+        return;
+      }
+
+      isOldRLERepeatCode(next);
+        throw OHNO("HDR old RLE not implemented");
+
+      scanline[i] = next;
+    }
+  }
 }
 
 Image readHdr(std::istream &input) {
@@ -57,7 +187,7 @@ Image readHdr(std::istream &input) {
       throw OHNO("HDR resolution not found");
 
     if (input.fail())
-      throw OHNO("input fail");
+      throw OHNO("HDR header read fail");
 
     if(strlen(line) == 0) {
       // ignore blank lines
@@ -134,81 +264,20 @@ Image readHdr(std::istream &input) {
 
   Fliperator flip(&image, axis1[0] == 'Y', rowOrder, colOrder);
 
-  // read pixel data
-
-  // buffer a scanline of pixels, to be allocated the first time a new RLE
-  // scanline is found
-  Pixel::RGBE8* scanline = nullptr;
-  // first 4 bytes of the scanline (not necessarily the first pixel value)
-  Pixel::RGBE8 first;
+  // buffer a scanline of pixels
+  std::vector<Pixel::RGBE8> scanline(size2);
+  bool unnormalized = false;
   for(int i1 = 0; i1 < size1; i1++) {
-    input.read(reinterpret_cast<char*>(&first), sizeof(first));
-    if(input.fail())
-      throw OHNO("read fail at start of scanline");
-    if(first.R == 2 && first.G == 2) {
-      // new RLE
-      if(size2 != ((first.B << 8) | first.E))
-        throw OHNO("HDR RLE wrong length");
-      if(!scanline)
-        scanline = new Pixel::RGBE8[size2];
-      for(int channel = 0; channel < 4; channel++) {
-        for(int i2 = 0; i2 < size2;) {
-          uint8_t code;
-          input.read(reinterpret_cast<char*>(&code), sizeof(code));
-          if(input.fail())
-            throw OHNO("HDR read code failed");
-          // The Radiance filefmts.pdf claims a code with the high bit set
-          // indicates a run. The Radiance code in color.c shows this is not
-          // quite correct; it uses (code > 128) to check for a run, meaning a
-          // byte with the high bit AND at least 1 other bit set indicates a
-          // run. A code of exactly 128 is a non-run.
-          int length = (code > 0x80) ? (code & 0x7f) : code;
-          if(i2 + length > size2)
-            throw OHNO("HDR overrun");
-          uint8_t value;
-          if(code > 0x80) {
-            // run
-            input.read(reinterpret_cast<char*>(&value), sizeof(value));
-            if(input.fail())
-              throw OHNO("read fail during run");
-            for(int j = 0; j < length; j++)
-              scanline[i2++][channel] = value;
-          } else {
-            // non-run
-            for(int j = 0; j < length; j++) {
-              input.read(reinterpret_cast<char*>(&value), sizeof(value));
-              if(input.fail())
-                throw OHNO("read fail during non-run");
-              scanline[i2++][channel] = value;
-            }
-          }
-        }
-      }
-      for(int i2 = 0; i2 < size2; i2++) {
-        *static_cast<Pixel::RGBE8*>(*flip) = scanline[i2];
-        ++flip;
-      }
-    } else {
-      *static_cast<Pixel::RGBE8*>(*flip) = first;
+    scanRLE(input, scanline);
+    for(int i2 = 0; i2 < size2; i2++) {
+      if(!isNormalized(scanline[i2]))
+        unnormalized = true;
+      *static_cast<Pixel::RGBE8*>(*flip) = scanline[i2];
       ++flip;
-      Pixel::RGBE8 next;
-      for(int i2 = 1; i2 < size2;) {
-        input.read(reinterpret_cast<char*>(&next), sizeof(next));
-        if(input.fail())
-          throw OHNO("read fail for next pixel");
-        if(next.R == 1 && next.G == 1 && next.B == 1) {
-          // TODO old RLE
-          throw OHNO("HDR old RLE not implemented");
-        } else {
-          // no RLE
-          *static_cast<Pixel::RGBE8*>(*flip) = next;
-          ++flip;
-          i2++;
-        }
-      }
     }
   }
-  delete[] scanline;
+  if(unnormalized)
+    std::cout << "warning, HDR unnormalized pixel data\n";
 
   return image;
 }
