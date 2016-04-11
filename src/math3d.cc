@@ -512,7 +512,7 @@ Vec4 operator*(const Mat4 &m, const Vec4 &v) {
 Ray operator*(const Mat4 &m, const Ray &r) {
   Vec4 o = m * Vec4(r.origin, 1);
   Vec4 d = m * Vec4(r.direction, 0);
-  return Ray(o.unHomogenize(), Vec3(d.x, d.y, d.z));
+  return Ray(o.unHomogenize(), d.dropW());
 }
 
 void assertMath() {

@@ -98,17 +98,15 @@ void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
 }
 
 void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
-  UNUSED(window);
-  UNUSED(button);
-  UNUSED(action);
   UNUSED(mods);
-}
-
-void onCursorPos(GLFWwindow* window, double xpos, double ypos) {
-  UNUSED(window);
-  UNUSED(xpos);
-  UNUSED(ypos);
-  assert(cameraObjPtr);
+  if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    std::cout << "click x=" << xpos << " y=" << ypos << std::endl;
+    Vec3 near, far;
+    cameraPtr->castPixel(int(xpos), int(ypos), near, far);
+    std::cout << "cast near=" << near << " far=" << far << std::endl;
+  }
 }
 
 int main() {
@@ -158,7 +156,6 @@ int submain() {
   glfwSetFramebufferSizeCallback(window, onFramebufferSize);
   glfwSetKeyCallback(window, onKey);
   glfwSetMouseButtonCallback(window, onMouseButton);
-  glfwSetCursorPosCallback(window, onCursorPos);
 
   assert(checkGL());
 

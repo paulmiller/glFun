@@ -113,8 +113,18 @@ Mat4 Camera::getInvTransform() const {
   return mInvView * mInvProj;
 }
 
-Ray Camera::pixelRay(int xPx, int yPx) const {
-  float x = linearMap(xPx, -0.5f, (mFrameWidthPx  - 1) + 0.5f, -1.0f,  1.0f);
-  float y = linearMap(yPx, -0.5f, (mFrameHeightPx - 1) + 0.5f,  1.0f, -1.0f);
-  return getInvTransform() * Ray(Vec3(x, y, 1), -Vec3::UNIT_Z);
+void Camera::castPixel(int xPx, int yPx, Vec3 &near, Vec3 &far) const {
+  Mat4 inv = getInvTransform();
+
+  // Map pixel indices to screen coordinates
+  float x = linearMap(xPx, -0.5f, mFrameWidthPx  - 0.5f, -1.0f,  1.0f);
+  float y = linearMap(yPx, -0.5f, mFrameHeightPx - 0.5f,  1.0f, -1.0f);
+
+  // Points defining the ray, in viewing-volume-space
+  Vec3 viewNear(x, y,  1);
+  Vec3 viewFar (x, y, -1);
+
+  // Points, in world-space
+  near = (inv * Vec4(viewNear, 1)).unHomogenize();
+  far  = (inv * Vec4(viewFar , 1)).unHomogenize();
 }
