@@ -145,3 +145,65 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
   return objects;
 }
 
+namespace {
+  // Test whether a ray starting at E and extending in direction D intersects a
+  // triangle with vertices A, B, and C.
+  bool intersects(
+    const Vec3 &E, const Vec3 &D,
+    const Vec3 &A, const Vec3 &B, const Vec3 &C
+  ) {
+    /* Solve:
+    E + tD = A + b(B-A) + c(C-A)
+
+    tD - b(B-A) - c(C-A) = A-E
+    tD + b(A-B) + c(A-C) = A-E
+
+    [           ]   [ t ]   [     ]
+    [ D A-B A-C ] x [ b ] = [ A-E ]
+    [           ]   [ c ]   [     ] */
+
+    Vec3 BA = A - B;
+    Vec3 CA = A - C;
+    Vec3 EA = A - E;
+
+    float d = det(D, BA, CA);
+
+    if(d == 0)
+      return false;
+
+    float t = det(EA, BA, CA) / d;
+    float b = det( D, EA, CA) / d;
+    float c = det( D, BA, EA) / d;
+
+    return (0 <= t && t <= 1) && (0 <= b && b <= 1) && (0 <= c && c <= 1) &&
+      (b + c <= 1);
+  }
+
+  /*
+  assert(intersects(
+    Vec3(0,0,0), Vec3(1,1,1),
+    Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1)
+  ));
+  assert(!intersects(
+    Vec3(0,0,0), Vec3(-1,1,1),
+    Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1)
+  ));
+  assert(!intersects(
+    Vec3(0,0,0), Vec3(1,1,1),
+    Vec3(0,0,1), Vec3(1,0,1), Vec3(0,1,1)
+  ));
+  */
+}
+
+#include <iostream>
+
+bool Mesh::intersects(const Vec3 &start, const Vec3 &end) const {
+  for(auto triIt = mTris.begin(); triIt != mTris.end(); ++triIt) {
+    const Vec3 &A = mVerts[triIt->vertIdxs[0]];
+    const Vec3 &B = mVerts[triIt->vertIdxs[1]];
+    const Vec3 &C = mVerts[triIt->vertIdxs[2]];
+    if(::intersects(start, end, A, B, C))
+      return true;
+  }
+  return false;
+}

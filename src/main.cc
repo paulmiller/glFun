@@ -24,6 +24,7 @@ const int defaultHeight = 512;
 
 Camera *cameraPtr;
 Object *cameraObjPtr;
+Mesh *widgetPtr;
 
 void onFramebufferSize(GLFWwindow *window, int width, int height) {
   UNUSED(window);
@@ -106,6 +107,7 @@ void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
     Vec3 near, far;
     cameraPtr->castPixel(int(xpos), int(ypos), near, far);
     std::cout << "cast near=" << near << " far=" << far << std::endl;
+    std::cout << "hit=" << widgetPtr->intersects(near, far - near) << std::endl;
   }
 }
 
@@ -186,6 +188,7 @@ int submain() {
 
   std::ifstream widgetInput("res/suzanne.obj", std::ifstream::in);
   std::vector<Mesh> widgets = Mesh::parseObj(widgetInput);
+  widgetPtr = &(widgets[0]);
   GLuint vertBufferId = vertVBO(widgets[0]);
   GLuint uvBufferId = uvVBO(widgets[0]);
   GLuint normBufferId = normVBO(widgets[0]);

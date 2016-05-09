@@ -497,6 +497,12 @@ std::ostream& operator<<(std::ostream& out, const Quat& q) {
  * Misc                                                                      *
  *****************************************************************************/
 
+// Determinant of the 3x3 matrix with columns [A B C]
+float det(const Vec3 &A, const Vec3 &B, const Vec3 &C) {
+  return A.x * B.y * C.z + B.x * C.y * A.z + C.x * A.y * B.z
+       - C.x * B.y * A.z - B.x * A.y * C.z - A.x * C.y * B.z;
+}
+
 Ray::Ray(const Vec3 &_origin, const Vec3 &_direction) :
   origin(_origin), direction(_direction) {}
 
@@ -630,4 +636,7 @@ void assertMath() {
   Quat q3 = q1 * q2;
   Mat4 q3m = Mat4::rotation(q3);
   assert(q3m == Mat4::IDENTITY);
+
+  assert(   0 == det(Vec3( 1, 4, 7), Vec3( 2, 5, 8), Vec3( 3, 6, 9)) );
+  assert( 140 == det(Vec3( 9, 7,-3), Vec3( 4, 2,-8), Vec3( 4, 5,-4)) );
 }

@@ -38,6 +38,10 @@ public:
 
 public:
   Mesh(const char* name);
+  // Check for intersection with a line segment
+  // TODO currently a ray
+  bool intersects(const Vec3 &start, const Vec3 &end) const;
+  // Parse Wavefront OBJ format
   static std::vector<Mesh> parseObj(std::istream &input);
 };
 

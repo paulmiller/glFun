@@ -166,6 +166,9 @@ std::ostream& operator<<(std::ostream& out, const Quat& q);
  * Misc                                                                      *
  *****************************************************************************/
 
+// Determinant of the 3x3 matrix with columns [A B C]
+float det(const Vec3 &A, const Vec3 &B, const Vec3 &C);
+
 class Ray {
 public:
   Vec3 origin;
