@@ -27,7 +27,6 @@ Object *cameraObjPtr;
 Mesh *widgetPtr;
 
 void onFramebufferSize(GLFWwindow *window, int width, int height) {
-  UNUSED(window);
   assert(cameraPtr);
 
   float aspect = float(width) / float(height);
@@ -83,10 +82,6 @@ bool getCommandState(KeyCommand command) {
 }
 
 void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  UNUSED(window);
-  UNUSED(scancode);
-  UNUSED(mods);
-
   for(int i = 0; i < controlNum; i++) {
     if(key == controls[i].code) {
       if(action == GLFW_PRESS)
@@ -99,7 +94,6 @@ void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
 }
 
 void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
-  UNUSED(mods);
   if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);

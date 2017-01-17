@@ -18,7 +18,7 @@ srcs = [
 build = open('build.ninja', 'w')
 
 build.write('''cc = clang++
-cflags = -std=c++11 -Wall -Wextra -g -O0
+cflags = -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -O0
 libs = -lm -lGL -lGLEW -lglfw -lpng
 
 rule cc
