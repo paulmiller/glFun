@@ -4,11 +4,8 @@
 
 #include <cassert>
 #include <cmath>
-#include <cstring> // for memset
 
-Camera::Camera() {
-  memset(this, 0, sizeof(Camera));
-}
+Camera::Camera() : mFrameWidthPx(0), mFrameHeightPx(0) {}
 
 void Camera::setResolution(int widthPx, int heightPx) {
   assert(widthPx > 0);
@@ -23,7 +20,7 @@ void Camera::setFrustum(
   assert(nearClip > 0);
   assert(farClip > nearClip);
   assert(horizFOV > 0);
-  assert(horizFOV < PI);
+  assert(horizFOV < PI_f);
   assert(aspect > 0);
 
   float n = nearClip;

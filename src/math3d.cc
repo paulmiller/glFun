@@ -91,7 +91,7 @@ Mat4 Mat4::scale(const Vec3 &v) {
   );
 }
 
-Mat4::Mat4() {}
+Mat4::Mat4() : Mat4(ZERO) {} // TODO initialization order bugs?
 
 Mat4::Mat4(
   float r0c0, float r0c1, float r0c2, float r0c3,
@@ -248,7 +248,7 @@ const Vec3 Vec3::UNIT_X(1, 0, 0);
 const Vec3 Vec3::UNIT_Y(0, 1, 0);
 const Vec3 Vec3::UNIT_Z(0, 0, 1);
 
-Vec3::Vec3() {}
+Vec3::Vec3() : Vec3(ZERO) {} // TODO initialization order bugs?
 Vec3::Vec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 Vec3::Vec3(const Vec3 &a) : x(a.x), y(a.y), z(a.z) {};
 
@@ -360,7 +360,7 @@ const Vec4 Vec4::UNIT_Y(0, 1, 0, 0);
 const Vec4 Vec4::UNIT_Z(0, 0, 1, 0);
 const Vec4 Vec4::UNIT_W(0, 0, 0, 1);
 
-Vec4::Vec4() {}
+Vec4::Vec4() : Vec4(ZERO) {} // TODO initialization order bugs?
 Vec4::Vec4(float _x, float _y, float _z, float _w)
     : x(_x), y(_y), z(_z), w(_w) {}
 Vec4::Vec4(const Vec4 &a) : x(a.x), y(a.y), z(a.z), w(a.w) {}
@@ -631,8 +631,8 @@ void assertMath() {
   assert(Vec4::ZERO + Vec4::UNIT_X + Vec4::UNIT_Y + Vec4::UNIT_Z +
     Vec4::UNIT_W == Vec4(1, 1, 1, 1));
 
-  Quat q1 = Quat::rotation(Vec3(1,1,1), PI/2);
-  Quat q2 = Quat::rotation(-Vec3(2,2,2), PI/2);
+  Quat q1 = Quat::rotation(Vec3(1,1,1), PI_f/2);
+  Quat q2 = Quat::rotation(-Vec3(2,2,2), PI_f/2);
   Quat q3 = q1 * q2;
   Mat4 q3m = Mat4::rotation(q3);
   assert(q3m == Mat4::IDENTITY);

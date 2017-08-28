@@ -14,11 +14,11 @@ float linearMap(float x, float x1, float x2, float y1, float y2) {
 }
 
 float radToDeg(float radians) {
-  return radians * (180 / PI);
+  return radians * (180 / PI_f);
 }
 
 float degToRad(float degrees) {
-  return degrees * (PI / 180);
+  return degrees * (PI_f / 180);
 }
 
 bool hasPrefix(const char *prefix, const char *str) {

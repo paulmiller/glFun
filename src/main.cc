@@ -1,6 +1,7 @@
 #include "bytes.h"
-#include "camera.h"
+#include "camera_control.h"
 #include "gl_util.h"
+#include "gl_viewport_control.h"
 #include "image.h"
 #include "image_hdr.h"
 #include "image_png.h"
@@ -8,9 +9,6 @@
 #include "object.h"
 #include "ohno.h"
 #include "util.h"
-
-#include <GL/glew.h> // must precede gl, glfw
-#include <GLFW/glfw3.h>
 
 #include <cassert>
 #include <fstream>
@@ -22,20 +20,7 @@ int submain();
 const int defaultWidth = 512;
 const int defaultHeight = 512;
 
-Camera *cameraPtr;
-Object *cameraObjPtr;
-Mesh *widgetPtr;
-
-void onFramebufferSize(GLFWwindow *window, int width, int height) {
-  assert(cameraPtr);
-
-  float aspect = float(width) / float(height);
-  float horizFOV = PI/2;
-  cameraPtr->setResolution(width, height);
-  cameraPtr->setFrustum(0.1f, 100.0f, horizFOV, aspect);
-  glViewport(0, 0, width, height);
-}
-
+/*
 enum KeyCommand {
   FORWARD,
   BACKWARD,
@@ -104,25 +89,30 @@ void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
     std::cout << "hit=" << widgetPtr->intersects(near, far - near) << std::endl;
   }
 }
+*/
 
 int main() {
-  try {
-    return submain();
-  } catch(OhNo ohno) {
-    std::cout << ohno << std::endl;
+  if(!glfwInit()) {
+    std::cout << "glfwInit failed" << std::endl;
     return 1;
   }
+
+  int ret;
+  try {
+    ret = submain();
+  } catch(OhNo ohno) {
+    std::cout << ohno << std::endl;
+    ret = 1;
+  }
+
+  glfwTerminate();
+  return ret;
 }
 
 #include <cmath>
 
 int submain() {
   assertMath();
-
-  if(!glfwInit()) {
-    std::cout << "glfwInit failed" << std::endl;
-    return 1;
-  }
 
   assert(checkGL());
 
@@ -133,25 +123,15 @@ int submain() {
 
   assert(checkGL());
 
-  GLFWwindow* window = glfwCreateWindow(defaultWidth, defaultHeight,
-      "toy", NULL, NULL);
-  if(!window) {
-    std::cout << "glfwCreateWindow failed" << std::endl;
-    glfwTerminate();
-    return 1;
-  }
+  GlViewportControl viewportControl;
+  CameraControl cameraControl(defaultWidth, defaultHeight);
+  cameraControl.getCam()->lookAt(Vec3(2,2,2), Vec3(0,0,0), Vec3::UNIT_Y);
+  GlfwWindow window;
+  window.addObserver(&viewportControl);
+  window.addObserver(&cameraControl);
+  window.create(defaultWidth, defaultHeight, "toy");
 
   assert(checkGL());
-
-  Camera camera;
-  cameraPtr = &camera;
-  Object cameraObj;
-  cameraObjPtr = &cameraObj;
-  cameraObj.pos = Vec3(0, 0, 2);
-  onFramebufferSize(window, defaultWidth, defaultHeight);
-  glfwSetFramebufferSizeCallback(window, onFramebufferSize);
-  glfwSetKeyCallback(window, onKey);
-  glfwSetMouseButtonCallback(window, onMouseButton);
 
   assert(checkGL());
 
@@ -164,7 +144,6 @@ int submain() {
   glewExperimental = true;
   if(glewInit() != GLEW_OK) {
     std::cout << "glewInit failed" << std::endl;
-    glfwTerminate();
     return 1;
   }
   GLenum glewError = glGetError();
@@ -182,7 +161,6 @@ int submain() {
 
   std::ifstream widgetInput("res/suzanne.obj", std::ifstream::in);
   std::vector<Mesh> widgets = Mesh::parseObj(widgetInput);
-  widgetPtr = &(widgets[0]);
   GLuint vertBufferId = vertVBO(widgets[0]);
   GLuint uvBufferId = uvVBO(widgets[0]);
   GLuint normBufferId = normVBO(widgets[0]);
@@ -209,7 +187,8 @@ int submain() {
   glClearDepth(-1.0f);
 
   int64_t frame = 0;
-  while(!glfwWindowShouldClose(window) && !getCommandState(ESCAPE)) {
+  while(!glfwWindowShouldClose(window)) {
+    /*
     bool goingForward  = getCommandState(FORWARD);
     bool goingBackward = getCommandState(BACKWARD);
     bool goingLeft     = getCommandState(STRAFE_LEFT);
@@ -249,12 +228,14 @@ int submain() {
 
     Vec3 forward = (Mat4::rotation(cameraObj.rot) * -Vec4::UNIT_Z).dropW();
     camera.look(cameraObj.pos, forward, Vec3::UNIT_Y);
+    */
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(programId);
 
-    glUniformMatrix4fv(MatrixID, 1, GL_FALSE, camera.getTransform().data());
+    glUniformMatrix4fv(MatrixID, 1, GL_FALSE,
+      cameraControl.getCam()->getTransform().data());
 
     assert(checkGL());
 
@@ -325,6 +306,5 @@ int submain() {
 
   assert(checkGL());
 
-  glfwTerminate();
   return 0;
 }

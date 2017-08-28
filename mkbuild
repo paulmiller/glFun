@@ -3,7 +3,10 @@
 srcs = [
   'bytes',
   'camera',
+  'camera_control',
   'gl_util',
+  'gl_viewport_control',
+  'glfw_window',
   'image',
   'image_hdr',
   'image_png',
