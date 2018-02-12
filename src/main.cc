@@ -125,7 +125,7 @@ int submain() {
 
   GlViewportControl viewportControl;
   CameraControl cameraControl(defaultWidth, defaultHeight);
-  cameraControl.getCam()->lookAt(Vec3(2,2,2), Vec3(0,0,0), Vec3::UNIT_Y);
+  cameraControl.getCam()->lookAt(Vec3(2,2,6), Vec3(0,0,0), Vec3::UNIT_Y);
   GlfwWindow window;
   window.addObserver(&viewportControl);
   window.addObserver(&cameraControl);
@@ -149,9 +149,8 @@ int submain() {
   GLenum glewError = glGetError();
   assert(glewError == GL_NO_ERROR || glewError == GL_INVALID_ENUM);
 
-  GLuint color = pngTex("res/suzanne-color.png");
-
-  assert(checkGL());
+  //GLuint color = pngTex("res/suzanne-color.png");
+  GLuint color = pngTex("res/axes.png");
 
   assert(checkGL());
 
@@ -159,7 +158,8 @@ int submain() {
   glGenVertexArrays(1, &arrayId);
   glBindVertexArray(arrayId);
 
-  std::ifstream widgetInput("res/suzanne.obj", std::ifstream::in);
+  //std::ifstream widgetInput("res/suzanne.obj", std::ifstream::in);
+  std::ifstream widgetInput("res/axes.obj", std::ifstream::in);
   std::vector<Mesh> widgets = Mesh::parseObj(widgetInput);
   GLuint vertBufferId = vertVBO(widgets[0]);
   GLuint uvBufferId = uvVBO(widgets[0]);
@@ -291,6 +291,8 @@ int submain() {
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
+
+    assert(checkGL());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
