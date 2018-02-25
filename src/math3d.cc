@@ -240,6 +240,104 @@ std::ostream& operator<<(std::ostream& out, const Mat4& m) {
 }
 
 /*****************************************************************************
+ * Vec2                                                                      *
+ *****************************************************************************/
+
+const Vec2 Vec2::ZERO(0, 0);
+const Vec2 Vec2::UNIT_X(1, 0);
+const Vec2 Vec2::UNIT_Y(0, 1);
+
+Vec2::Vec2() : Vec2(ZERO) {} // TODO initialization order bugs?
+Vec2::Vec2(float _x, float _y) : x(_x), y(_y) {}
+Vec2::Vec2(const Vec2 &a) : x(a.x), y(a.y) {};
+
+Vec2& Vec2::operator=(const Vec2& a) {
+  x = a.x;
+  y = a.y;
+  return *this;
+}
+
+Vec2& Vec2::operator+=(const Vec2 &b) {
+  x += b.x;
+  y += b.y;
+  return *this;
+}
+
+Vec2& Vec2::operator-=(const Vec2 &b) {
+  x -= b.x;
+  y -= b.y;
+  return *this;
+}
+
+Vec2& Vec2::operator*=(float s) {
+  x *= s;
+  y *= s;
+  return *this;
+}
+
+float Vec2::len() const {
+  return sqrt(len2());
+}
+
+float Vec2::len2() const {
+  return x*x + y*y;
+}
+
+Vec2 Vec2::unit() const {
+  return (*this) * invSqrt(len2());
+}
+
+float dot(const Vec2 &a , const Vec2 &b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+Vec2 proj(const Vec2 &a, const Vec2 &b) {
+  Vec2 b1 = b.unit();
+  return dot(a, b1) * b1;
+}
+
+float angleBetween(const Vec2 &a, const Vec2 &b) {
+  return acos( dot(a, b) / (a.len() * b.len()) );
+}
+
+Vec2 operator-(const Vec2 &v) {
+  return Vec2(-v.x, -v.y);
+}
+
+Vec2 operator+(const Vec2 &a, const Vec2 &b) {
+  return Vec2(a.x + b.x, a.y + b.y);
+}
+
+Vec2 operator-(const Vec2 &a, const Vec2 &b) {
+  return Vec2(a.x - b.x, a.y - b.y);
+}
+
+Vec2 operator*(const Vec2 &v, float s) {
+  return Vec2(v.x * s, v.y * s);
+}
+
+Vec2 operator*(float s, const Vec2 &v) {
+  return Vec2(s * v.x, s * v.y);
+}
+
+Vec2 operator/(const Vec2 &v, float d) {
+  return Vec2(v.x / d, v.y / d);
+}
+
+bool operator==(const Vec2 &a, const Vec2 &b) {
+  return a.x == b.x && a.y == b.y;
+}
+
+bool operator!=(const Vec2 &a, const Vec2 &b) {
+  return a.x != b.x || a.y != b.y;
+}
+
+std::ostream& operator<<(std::ostream& out, const Vec2& v) {
+  out << '<' << v.x << ' ' << v.y << '>';
+  return out;
+}
+
+/*****************************************************************************
  * Vec3                                                                      *
  *****************************************************************************/
 
@@ -250,6 +348,7 @@ const Vec3 Vec3::UNIT_Z(0, 0, 1);
 
 Vec3::Vec3() : Vec3(ZERO) {} // TODO initialization order bugs?
 Vec3::Vec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+Vec3::Vec3(const Vec2 &xy, float _z) : x(xy.x), y(xy.y), z(_z) {}
 Vec3::Vec3(const Vec3 &a) : x(a.x), y(a.y), z(a.z) {};
 
 Vec3& Vec3::operator=(const Vec3& a) {
@@ -313,6 +412,10 @@ float angleBetween(const Vec3 &a, const Vec3 &b) {
   return acos( dot(a, b) / (a.len() * b.len()) );
 }
 
+Quat quatBetween(const Vec3 &a, const Vec3 &b) {
+  return Quat::rotation(cross(a, b), angleBetween(a, b));
+}
+
 Vec3 operator-(const Vec3 &v) {
   return Vec3(-v.x, -v.y, -v.z);
 }
@@ -363,8 +466,8 @@ const Vec4 Vec4::UNIT_W(0, 0, 0, 1);
 Vec4::Vec4() : Vec4(ZERO) {} // TODO initialization order bugs?
 Vec4::Vec4(float _x, float _y, float _z, float _w)
     : x(_x), y(_y), z(_z), w(_w) {}
+Vec4::Vec4(const Vec3 &xyz, float _w) : x(xyz.x), y(xyz.y), z(xyz.z), w(_w) {}
 Vec4::Vec4(const Vec4 &a) : x(a.x), y(a.y), z(a.z), w(a.w) {}
-Vec4::Vec4(const Vec3 &a, float _w) : x(a.x), y(a.y), z(a.z), w(_w) {}
 
 Vec4& Vec4::operator=(const Vec4& a) {
   x = a.x;
@@ -481,11 +584,19 @@ Quat& Quat::operator*=(const Quat& b) {
 
 Quat operator*(const Quat &a, const Quat &b) {
   return Quat(
-    a.r*b.r - a.x*b.x - a.y*b.y - a.z-b.z,
+    a.r*b.r - a.x*b.x - a.y*b.y - a.z*b.z,
     a.r*b.x + a.x*b.r + a.y*b.z - a.z*b.y,
     a.r*b.y - a.x*b.z + a.y*b.r + a.z*b.x,
     a.r*b.z + a.x*b.y - a.y*b.x + a.z*b.r
   );
+}
+
+bool operator==(const Quat &a, const Quat &b) {
+  return a.r == b.r && a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+bool operator!=(const Quat &a, const Quat &b) {
+  return a.r != b.r || a.x != b.x || a.y != b.y || a.z != b.z;
 }
 
 std::ostream& operator<<(std::ostream& out, const Quat& q) {
@@ -521,121 +632,176 @@ Ray operator*(const Mat4 &m, const Ray &r) {
   return Ray(o.unHomogenize(), d.dropW());
 }
 
+namespace {
+  void testMat4() {
+    Mat4 a(
+       1,  2,  3,  4,
+       5,  6,  7,  8,
+       9, 10, 11, 12, 
+      13, 14, 15, 16
+    );
+
+    Mat4 aCopy(a);
+    assert(a == aCopy);
+
+    Mat4 aAssign(Mat4::ZERO);
+    aAssign = a;
+    assert(a == aAssign);
+
+    assert(a - a == Mat4::ZERO);
+    assert(a + Mat4::ZERO == a);
+    assert(a - Mat4::ZERO == a);
+    assert(a * Mat4::IDENTITY == a);
+    assert(Mat4::IDENTITY * a == a);
+    assert(a * Mat4::ZERO == Mat4::ZERO);
+
+    assert(a.transpose() == Mat4(
+      1, 5,  9, 13,
+      2, 6, 10, 14,
+      3, 7, 11, 15,
+      4, 8, 12, 16
+    ));
+
+    Mat4 a2;
+    for(int r = 0; r < 4; r++) {
+      for(int c = 0; c < 4; c++) {
+        a2(r,c) = a(r,c) * 2;
+      }
+    }
+    assert(a*2 == a2);
+    for(int r = 0; r < 4; r++) {
+      for(int c = 0; c < 4; c++) {
+        a2(r,c) = a(r,c) / 2;
+      }
+    }
+    assert(a/2 == a2);
+
+    Mat4 b(
+       17, -18,  19, -20,
+      -21,  22, -23,  24,
+       25, -26,  27, -28,
+      -29,  30, -31,  32
+    );
+
+    assert(a * b == Mat4(
+       -66,  68,  -70,  72,
+       -98, 100, -102, 104,
+      -130, 132, -134, 136,
+      -162, 164, -166, 168
+    ));
+
+    assert(a != b);
+  }
+
+  void testVec2() {
+    Vec2 a(4, 3);
+
+    Vec2 aCopy(a);
+    assert(a == aCopy);
+
+    Vec2 aAssign(0, 0);
+    assert(a == (aAssign = a));
+    assert(a == aAssign);
+
+    assert(a.len() == 5);
+    assert(a.len2() == 25);
+    assert(a.unit() == Vec2(4.0f/5.0f, 3.0f/5.0f));
+
+    Vec2 b(-1, 2);
+
+    assert(dot(a, b) == 2);
+    assert(proj(Vec2(1,1), Vec2(2,0)) == Vec2(1,0));
+    assert(angleBetween(Vec2(1,1), Vec2(2,0)) == PI_f/4);
+    assert(-a == Vec2(-4, -3));
+    assert(a + b == Vec2(3, 5));
+    assert(a - b == Vec2(5, 1));
+    assert(a * 2 == Vec2(8, 6));
+    assert(2 * a == Vec2(8, 6));
+    assert(a / 2 == Vec2(2, 1.5f));
+    assert(a != b);
+
+    assert(Vec2::ZERO + Vec2::UNIT_X + Vec2::UNIT_Y == Vec2(1, 1));
+  }
+
+  void testVec3() {
+    Vec3 a(1, 4, 8);
+
+    Vec3 aCopy(a);
+    assert(a == aCopy);
+
+    Vec3 aAssign(0, 0, 0);
+    assert(a == (aAssign = a));
+    assert(a == aAssign);
+
+    assert(a.len() == 9);
+    assert(a.len2() == 81);
+    assert(a.unit() == Vec3(1.0f/9.0f, 4.0f/9.0f, 8.0f/9.0f));
+
+    Vec3 b(-1, 2, -3);
+
+    assert(dot(a, b) == -17);
+    assert(proj(Vec3(1,1,1), Vec3(2,0,0)) == Vec3(1,0,0));
+    float angle = atan(sqrt(2.0f));
+    assert(angleBetween(Vec3(1,1,1), Vec3(2,0,0)) == angle);
+    assert(quatBetween(Vec3(2,0,0), Vec3(1,1,1)) ==
+      Quat::rotation(Vec3(0,-1,1), angle));
+    assert(-a == Vec3(-1, -4, -8));
+    assert(a + b == Vec3(0, 6, 5));
+    assert(a - b == Vec3(2, 2, 11));
+    assert(a * 2 == Vec3(2, 8, 16));
+    assert(2 * a == Vec3(2, 8, 16));
+    assert(a / 2 == Vec3(0.5, 2, 4));
+    assert(a != b);
+
+    assert(Vec3::ZERO + Vec3::UNIT_X + Vec3::UNIT_Y + Vec3::UNIT_Z ==
+      Vec3(1, 1, 1));
+  }
+
+  void testVec4() {
+    Vec4 a(1, 2, 3, 4);
+
+    Vec4 aCopy(a);
+    assert(a == aCopy);
+
+    Vec4 aAssign(0, 0, 0, 0);
+    aAssign = a;
+    assert(a == aAssign);
+
+    Vec4 b(0, -1, 1, -2);
+
+    assert(-a == Vec4(-1, -2, -3, -4));
+    assert(a + b == Vec4(1, 1, 4, 2));
+    assert(a - b == Vec4(1, 3, 2, 6));
+    assert(a != b);
+
+    Mat4 m(
+       1,  2,  3,  4,
+       5,  6,  7,  8,
+       9, 10, 11, 12, 
+      13, 14, 15, 16
+    );
+    assert(m * a == Vec4(30, 70, 110, 150));
+
+    assert(Vec4::ZERO + Vec4::UNIT_X + Vec4::UNIT_Y + Vec4::UNIT_Z +
+      Vec4::UNIT_W == Vec4(1, 1, 1, 1));
+  }
+
+  void testQuat() {
+    Quat q1 = Quat::rotation(Vec3(1,1,1), PI_f/2);
+    Quat q2 = Quat::rotation(-Vec3(2,2,2), PI_f/2);
+    Quat q3 = q1 * q2;
+    Mat4 q3m = Mat4::rotation(q3);
+    assert(q3m == Mat4::IDENTITY);
+    assert(Quat(1,-2,3,-4) * Quat(-5,6,-7,8) == Quat(60,12,-30,24));
+  }
+}
+
 void assertMath() {
-  Mat4 a(
-     1,  2,  3,  4,
-     5,  6,  7,  8,
-     9, 10, 11, 12, 
-    13, 14, 15, 16
-  );
-
-  Mat4 aCopy(a);
-  assert(a == aCopy);
-
-  Mat4 aAssign(Mat4::ZERO);
-  aAssign = a;
-  assert(a == aAssign);
-
-  assert(a - a == Mat4::ZERO);
-  assert(a + Mat4::ZERO == a);
-  assert(a - Mat4::ZERO == a);
-  assert(a * Mat4::IDENTITY == a);
-  assert(Mat4::IDENTITY * a == a);
-  assert(a * Mat4::ZERO == Mat4::ZERO);
-
-  assert(a.transpose() == Mat4(
-    1, 5,  9, 13,
-    2, 6, 10, 14,
-    3, 7, 11, 15,
-    4, 8, 12, 16
-  ));
-
-  Mat4 a2;
-  for(int r = 0; r < 4; r++) {
-    for(int c = 0; c < 4; c++) {
-      a2(r,c) = a(r,c) * 2;
-    }
-  }
-  assert(a*2 == a2);
-  for(int r = 0; r < 4; r++) {
-    for(int c = 0; c < 4; c++) {
-      a2(r,c) = a(r,c) / 2;
-    }
-  }
-  assert(a/2 == a2);
-
-  Mat4 b(
-     17, -18,  19, -20,
-    -21,  22, -23,  24,
-     25, -26,  27, -28,
-    -29,  30, -31,  32
-  );
-
-  assert(a * b == Mat4(
-     -66,  68,  -70,  72,
-     -98, 100, -102, 104,
-    -130, 132, -134, 136,
-    -162, 164, -166, 168
-  ));
-
-  assert(a != b);
-
-  Vec3 c(1, 4, 8);
-
-  Vec3 cCopy(c);
-  assert(c == cCopy);
-
-  Vec3 cAssign(0, 0, 0);
-  assert(c == (cAssign = c));
-  assert(c == cAssign);
-
-  assert(c.len() == 9);
-  assert(c.len2() == 81);
-  assert(c.unit() == Vec3(1.0f/9.0f, 4.0f/9.0f, 8.0f/9.0f));
-
-  Vec3 d(-1, 2, -3);
-
-  assert(dot(c, d) == -17);
-  assert(cross(c, d) == Vec3(-28, -5, 6));
-  assert(proj(Vec3(1,1,1), Vec3(2,0,0)) == Vec3(1,0,0));
-  assert(angleBetween(Vec3(1,1,1), Vec3(2,0,0)) == (float) atan(sqrt(2.0f)));
-  assert(-c == Vec3(-1, -4, -8));
-  assert(c + d == Vec3(0, 6, 5));
-  assert(c - d == Vec3(2, 2, 11));
-  assert(c * 2 == Vec3(2, 8, 16));
-  assert(2 * c == Vec3(2, 8, 16));
-  assert(c / 2 == Vec3(0.5, 2, 4));
-  assert(c != d);
-
-  assert(Vec3::ZERO + Vec3::UNIT_X + Vec3::UNIT_Y + Vec3::UNIT_Z ==
-    Vec3(1, 1, 1));
-
-  Vec4 e(1, 2, 3, 4);
-
-  Vec4 eCopy(e);
-  assert(e == eCopy);
-
-  Vec4 eAssign(0, 0, 0, 0);
-  eAssign = e;
-  assert(e == eAssign);
-
-  Vec4 f(0, -1, 1, -2);
-
-  assert(-e == Vec4(-1, -2, -3, -4));
-  assert(e + f == Vec4(1, 1, 4, 2));
-  assert(e - f == Vec4(1, 3, 2, 6));
-  assert(e != f);
-
-  assert(a * e == Vec4(30, 70, 110, 150));
-
-  assert(Vec4::ZERO + Vec4::UNIT_X + Vec4::UNIT_Y + Vec4::UNIT_Z +
-    Vec4::UNIT_W == Vec4(1, 1, 1, 1));
-
-  Quat q1 = Quat::rotation(Vec3(1,1,1), PI_f/2);
-  Quat q2 = Quat::rotation(-Vec3(2,2,2), PI_f/2);
-  Quat q3 = q1 * q2;
-  Mat4 q3m = Mat4::rotation(q3);
-  assert(q3m == Mat4::IDENTITY);
+  testMat4();
+  testVec2();
+  testVec3();
+  testVec4();
+  testQuat();
 
   assert(   0 == det(Vec3( 1, 4, 7), Vec3( 2, 5, 8), Vec3( 3, 6, 9)) );
   assert( 140 == det(Vec3( 9, 7,-3), Vec3( 4, 2,-8), Vec3( 4, 5,-4)) );

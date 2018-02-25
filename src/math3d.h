@@ -57,6 +57,44 @@ bool operator!=(const Mat4 &a, const Mat4 &b);
 std::ostream& operator<<(std::ostream& out, const Mat4& mat);
 
 /*****************************************************************************
+ * Vec2                                                                      *
+ *****************************************************************************/
+
+class Vec2 {
+public:
+  float x, y;
+
+  static const Vec2 ZERO;
+  static const Vec2 UNIT_X;
+  static const Vec2 UNIT_Y;
+
+  Vec2();
+  Vec2(float _x, float _y);
+  Vec2(const Vec2 &a);
+
+  Vec2& operator=(const Vec2& a);
+  Vec2& operator+=(const Vec2 &b);
+  Vec2& operator-=(const Vec2 &b);
+  Vec2& operator*=(float s);
+  float len() const;
+  float len2() const;
+  Vec2 unit() const;
+};
+
+float dot(const Vec2 &a , const Vec2 &b);
+Vec2 proj(const Vec2 &a, const Vec2 &b); // projection of a onto b
+float angleBetween(const Vec2 &a, const Vec2 &b);
+Vec2 operator-(const Vec2 &v);
+Vec2 operator+(const Vec2 &a, const Vec2 &b);
+Vec2 operator-(const Vec2 &a, const Vec2 &b);
+Vec2 operator*(const Vec2 &v, float s);
+Vec2 operator*(float s, const Vec2 &v);
+Vec2 operator/(const Vec2 &v, float d);
+bool operator==(const Vec2 &a, const Vec2 &b);
+bool operator!=(const Vec2 &a, const Vec2 &b);
+std::ostream& operator<<(std::ostream& out, const Vec2& v);
+
+/*****************************************************************************
  * Vec3                                                                      *
  *****************************************************************************/
 
@@ -71,6 +109,7 @@ public:
 
   Vec3();
   Vec3(float _x, float _y, float _z);
+  Vec3(const Vec2 &xy, float _z);
   Vec3(const Vec3 &a);
 
   Vec3& operator=(const Vec3& a);
@@ -82,13 +121,11 @@ public:
   Vec3 unit() const;
 };
 
-float len();
-float len2();
-Vec3 unit();
 float dot(const Vec3 &a , const Vec3 &b);
 Vec3 cross(const Vec3 &a, const Vec3 &b);
 Vec3 proj(const Vec3 &a, const Vec3 &b); // projection of a onto b
 float angleBetween(const Vec3 &a, const Vec3 &b);
+Quat quatBetween(const Vec3 &a, const Vec3 &b);
 Vec3 operator-(const Vec3 &v);
 Vec3 operator+(const Vec3 &a, const Vec3 &b);
 Vec3 operator-(const Vec3 &a, const Vec3 &b);
@@ -115,8 +152,8 @@ public:
 
   Vec4();
   Vec4(float _x, float _y, float _z, float _w);
+  Vec4(const Vec3 &xyz, float _w);
   Vec4(const Vec4 &a);
-  Vec4(const Vec3 &a, float _w);
 
   Vec4& operator=(const Vec4& a);
   Vec4& operator+=(const Vec4 &b);
@@ -160,6 +197,8 @@ public:
 };
 
 Quat operator*(const Quat &a, const Quat &b); // Hamilton product
+bool operator==(const Quat &a, const Quat &b);
+bool operator!=(const Quat &a, const Quat &b);
 std::ostream& operator<<(std::ostream& out, const Quat& q);
 
 /*****************************************************************************
