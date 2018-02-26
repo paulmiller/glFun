@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-srcs = [
+common_srcs = [
   'bytes',
   'camera',
   'camera_control',
@@ -10,7 +10,6 @@ srcs = [
   'image',
   'image_hdr',
   'image_png',
-  'main',
   'math3d',
   'mesh',
   'object',
@@ -18,10 +17,19 @@ srcs = [
   'util'
 ]
 
+main_srcs = [
+  'main',
+]
+
+test_srcs = [
+  'catch_main',
+  'math3d_test'
+]
+
 build = open('build.ninja', 'w')
 
 build.write('''cc = clang++
-cflags = -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -O0
+cflags = -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -O0 -Ilibs/catch
 libs = -lm -lGL -lGLEW -lglfw -lpng
 
 rule cc
@@ -31,11 +39,14 @@ rule cc
 rule ln
   command = $cc $libs -o $out $in
 
-build out/a.out: ln %s
+build out/a.out: ln {main_o_files}
+build out/test: ln {test_o_files}
 
-%s
-''' % (' '.join(['out/' + s + '.o' for s in srcs]),
-       '\n'.join(['build out/' + s + '.o: cc src/' + s + '.cc' for s in srcs]))
+{o_file_rules}
+'''.format(
+  main_o_files=' ' .join(['out/'       + src + '.o'                        for src in (common_srcs + main_srcs)]),
+  test_o_files=' ' .join(['out/'       + src + '.o'                        for src in (common_srcs + test_srcs)]),
+  o_file_rules='\n'.join(['build out/' + src + '.o: cc src/' + src + '.cc' for src in (common_srcs + main_srcs + test_srcs)]))
 )
 
 build.close()

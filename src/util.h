@@ -4,8 +4,8 @@
 // Based on BUILD_BUG_ON from kernel.h
 #define COMPILE_ASSERT(condition) ((void) sizeof(char[1 - 2*!(condition)]))
 
-constexpr float  PI_f = 3.1415926535897932384626433832795028841971f;
 constexpr double PI_d = 3.1415926535897932384626433832795028841971;
+constexpr float  PI_f = PI_d;
 
 float invSqrt(float x);
 

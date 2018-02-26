@@ -112,8 +112,6 @@ int main() {
 #include <cmath>
 
 int submain() {
-  assertMath();
-
   assert(checkGL());
 
   glfwWindowHint(GLFW_SAMPLES, 4);
