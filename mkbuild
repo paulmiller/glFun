@@ -29,7 +29,7 @@ test_srcs = [
 build = open('build.ninja', 'w')
 
 build.write('''cc = clang++
-cflags = -std=c++11 -Wall -Wextra -Wno-unused-parameter -g -O0 -Ilibs/catch
+cflags = -std=c++17 -Wall -Wextra -Wno-unused-parameter -g -O0 -Ilibs/catch
 libs = -lm -lGL -lGLEW -lglfw -lpng
 
 rule cc

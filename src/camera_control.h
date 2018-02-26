@@ -16,8 +16,19 @@ public:
 
 private:
   Camera cam;
+
+  double rotation;
+  double declination;
+  double distance;
+
   bool dragging;
+  double drag_scale;
   double drag_start_x, drag_start_y;
+  double drag_end_x, drag_end_y;
+
+  double draggedRotation();
+  double draggedDeclination();
+  void updateCamPos();
 };
 
 #endif

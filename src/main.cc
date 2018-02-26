@@ -123,7 +123,6 @@ int submain() {
 
   GlViewportControl viewportControl;
   CameraControl cameraControl(defaultWidth, defaultHeight);
-  cameraControl.getCam()->lookAt(Vec3(2,2,6), Vec3(0,0,0), Vec3::UNIT_Y);
   GlfwWindow window;
   window.addObserver(&viewportControl);
   window.addObserver(&cameraControl);
