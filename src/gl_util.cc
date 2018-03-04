@@ -1,6 +1,5 @@
 #include "gl_util.h"
 
-#include "bytes.h"
 #include "image.h"
 #include "image_png.h"
 #include "ohno.h"
@@ -8,6 +7,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <vector>
 
 bool checkGL() {
   bool noErrors = true;
@@ -51,14 +51,37 @@ bool checkGL() {
   return noErrors;
 }
 
-GLuint loadShader(const char *sourceName, GLenum shaderType) {
+namespace {
+  // load a text file and append a null-terminator
+  std::vector<char> loadShaderFile(const char *file_name) {
+    std::ifstream in(file_name);
+    if(in.bad())
+      throw OHNO("couldn't open file");
+
+    in.seekg(0, in.end);
+    size_t size = in.tellg();
+    in.seekg(0, in.beg);
+
+    std::vector<char> buffer(size + 1); // init to 0. +1 for null.
+
+    in.read(buffer.data(), size);
+    if(in.bad())
+      throw OHNO("couldn't read file");
+
+    return buffer;
+  }
+}
+
+GLuint loadShader(const char *file_name, GLenum shaderType) {
   assert(shaderType == GL_VERTEX_SHADER || shaderType == GL_FRAGMENT_SHADER);
 
   GLuint id = glCreateShader(shaderType);
-  Bytes source = Bytes::loadFile(sourceName);
-  const char *ptr = source.get();
+
   COMPILE_ASSERT(sizeof(char) == sizeof(GLchar));
-  glShaderSource(id, 1, &ptr, nullptr);
+  std::vector<char> source = loadShaderFile(file_name);
+  const char * const data_ptr = source.data();
+  glShaderSource(id, 1, &data_ptr, nullptr);
+
   glCompileShader(id);
 
   GLint result = GL_FALSE;
@@ -66,9 +89,10 @@ GLuint loadShader(const char *sourceName, GLenum shaderType) {
   if(result == GL_FALSE) {
     GLint logLength;
     glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
-    Bytes log(logLength);
-    glGetShaderInfoLog(id, logLength, nullptr, log.get());
-    std::cout << "shader compile failed:\n" << log.get();
+    std::vector<char> log(logLength);
+    glGetShaderInfoLog(id, logLength, nullptr, log.data());
+    std::cout << "failed compiling shader \"" << file_name << "\":\n"
+      << log.data();
   }
 
   assert(checkGL());
@@ -87,9 +111,9 @@ GLuint linkProgram(GLuint vertShaderId, GLuint fragShaderId) {
   if(result == GL_FALSE) {
     GLint logLength;
     glGetProgramiv(programId, GL_INFO_LOG_LENGTH, &logLength);
-    Bytes log(logLength);
-    glGetProgramInfoLog(programId, logLength, nullptr, log.get());
-    std::cout << "program link failed:\n" << log.get();
+    std::vector<char> log(logLength);
+    glGetProgramInfoLog(programId, logLength, nullptr, log.data());
+    std::cout << "failed linking program:\n" << log.data();
   }
 
   assert(checkGL());

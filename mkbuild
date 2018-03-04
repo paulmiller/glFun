@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 common_srcs = [
-  'bytes',
   'camera',
   'camera_control',
   'gl_util',
