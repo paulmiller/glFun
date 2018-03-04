@@ -6,6 +6,7 @@
 // all angles in radians
 
 class Mat4;
+class Vec2;
 class Vec3;
 class Vec4;
 class Quat;
@@ -17,7 +18,7 @@ class Ray;
 
 class Mat4 {
 private:
-  float mData[16]; // Column-major
+  float data_[16]; // Column-major
 
 public:
   static const Mat4 ZERO;
@@ -69,7 +70,7 @@ public:
   static const Vec2 UNIT_Y;
 
   Vec2();
-  Vec2(float _x, float _y);
+  Vec2(float x, float y);
   Vec2(const Vec2 &a);
 
   Vec2& operator=(const Vec2& a);
@@ -108,8 +109,8 @@ public:
   static const Vec3 UNIT_Z;
 
   Vec3();
-  Vec3(float _x, float _y, float _z);
-  Vec3(const Vec2 &xy, float _z);
+  Vec3(float x, float y, float z);
+  Vec3(const Vec2 &xy, float z);
   Vec3(const Vec3 &a);
 
   Vec3& operator=(const Vec3& a);
@@ -121,7 +122,7 @@ public:
   Vec3 unit() const;
 };
 
-float dot(const Vec3 &a , const Vec3 &b);
+float dot(const Vec3 &a, const Vec3 &b);
 Vec3 cross(const Vec3 &a, const Vec3 &b);
 Vec3 proj(const Vec3 &a, const Vec3 &b); // projection of a onto b
 float angleBetween(const Vec3 &a, const Vec3 &b);
@@ -151,8 +152,8 @@ public:
   static const Vec4 UNIT_W;
 
   Vec4();
-  Vec4(float _x, float _y, float _z, float _w);
-  Vec4(const Vec3 &xyz, float _w);
+  Vec4(float x, float y, float z, float w);
+  Vec4(const Vec3 &xyz, float w);
   Vec4(const Vec4 &a);
 
   Vec4& operator=(const Vec4& a);
@@ -187,7 +188,7 @@ public:
   static Quat rotation(const Vec3 &axis, float angle);
 
   Quat();
-  Quat(float r_, float x_, float y_, float z_);
+  Quat(float r, float x, float y, float z);
   Quat(const Quat &src);
 
   Quat& operator=(const Quat& a);
@@ -213,7 +214,7 @@ public:
   Vec3 origin;
   Vec3 direction;
 
-  Ray(const Vec3 &_origin, const Vec3 &_direction);
+  Ray(const Vec3 &origin, const Vec3 &direction);
 };
 
 // Treats v as a column matrix and does m * v

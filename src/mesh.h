@@ -11,14 +11,14 @@ class UVCoord {
 public:
   float u, v;
 
-  UVCoord(float u_, float v_);
+  UVCoord(float u, float v);
 };
 
 class Tri {
 public:
-  int vertIdxs[3];
-  int normalIdxs[3];
-  int uvIdxs[3];
+  int vert_idxs[3];
+  int normal_idxs[3];
+  int uv_idxs[3];
 
   Tri(int v1, int v2, int v3);
   Tri(
@@ -30,11 +30,11 @@ public:
 
 class Mesh {
 public:
-  std::string mName;
-  std::vector<Vec3> mVerts;
-  std::vector<Vec3> mNormals;
-  std::vector<UVCoord> mUVs;
-  std::vector<Tri> mTris;
+  std::string name;
+  std::vector<Vec3> verts;
+  std::vector<Vec3> normals;
+  std::vector<UVCoord> uvs;
+  std::vector<Tri> tris;
 
 public:
   Mesh(const char* name);

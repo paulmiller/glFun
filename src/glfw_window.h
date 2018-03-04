@@ -36,10 +36,10 @@ private:
   static void dispatchMouseButton(
     GLFWwindow *window, int button, int action, int mods);
   static void dispatchCursorPosition(
-    GLFWwindow *window, double xpos, double ypos);
+    GLFWwindow *window, double x, double y);
 
-  GLFWwindow *window;
-  std::vector<Observer*> observers;
+  GLFWwindow *window_;
+  std::vector<Observer*> observers_;
 };
 
 #endif

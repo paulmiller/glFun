@@ -131,46 +131,46 @@ Image readPng(std::istream &input) {
   png_read_info(reader.s, reader.i);
   png_uint_32 width = png_get_image_width(reader.s, reader.i);
   png_uint_32 height = png_get_image_height(reader.s, reader.i);
-  png_byte bitDepth = png_get_bit_depth(reader.s, reader.i);
-  png_byte colorType = png_get_color_type(reader.s, reader.i);
+  png_byte bit_depth = png_get_bit_depth(reader.s, reader.i);
+  png_byte color_type = png_get_color_type(reader.s, reader.i);
 
-  if(bitDepth < 8) {
+  if(bit_depth < 8) {
     // Expand to 8 bits per channel
     png_set_packing(reader.s);
     png_set_expand(reader.s);
   }
 
-  if(bitDepth == 16 && shouldSwapEndian()) {
+  if(bit_depth == 16 && shouldSwapEndian()) {
     png_set_swap(reader.s);
   }
 
-  if(colorType & PNG_COLOR_MASK_PALETTE) {
+  if(color_type & PNG_COLOR_MASK_PALETTE) {
     png_set_palette_to_rgb(reader.s);
   }
 
-  bool hasAlpha = colorType & PNG_COLOR_MASK_ALPHA;
+  bool has_alpha = color_type & PNG_COLOR_MASK_ALPHA;
   if(png_get_valid(reader.s, reader.i, PNG_INFO_tRNS)) {
     png_set_tRNS_to_alpha(reader.s);
-    hasAlpha = true;
+    has_alpha = true;
   }
 
   Pixel::Type type;
-  if(hasAlpha) {
-    if(colorType & PNG_COLOR_MASK_COLOR) {
-      type = (bitDepth <= 8) ? Pixel::RGBA8_T : Pixel::RGBA16_T;
+  if(has_alpha) {
+    if(color_type & PNG_COLOR_MASK_COLOR) {
+      type = (bit_depth <= 8) ? Pixel::RGBA8_T : Pixel::RGBA16_T;
     } else {
-      type = (bitDepth <= 8) ? Pixel::VA8_T : Pixel::VA16_T;
+      type = (bit_depth <= 8) ? Pixel::VA8_T : Pixel::VA16_T;
     }
   } else {
-    if(colorType & PNG_COLOR_MASK_COLOR) {
-      type = (bitDepth <= 8) ? Pixel::RGB8_T : Pixel::RGB16_T;
+    if(color_type & PNG_COLOR_MASK_COLOR) {
+      type = (bit_depth <= 8) ? Pixel::RGB8_T : Pixel::RGB16_T;
     } else {
-      type = (bitDepth <= 8) ? Pixel::V8_T : Pixel::V16_T;
+      type = (bit_depth <= 8) ? Pixel::V8_T : Pixel::V16_T;
     }
   }
 
   std::cout << "reading PNG width=" << width << " height=" << height
-      << " bitDepth=" << (int) bitDepth
+      << " bit_depth=" << (int) bit_depth
       << " type=" << Pixel::name(type) << std::endl;
 
   Image img(width, height, type);
@@ -195,19 +195,19 @@ void writePng(std::ostream &output, Image &img) {
 
   png_set_write_fn(writer.s, &output, writePngStream, flushPngStream);
 
-  png_byte bitDepth;
+  png_byte bit_depth;
   switch(img.type()) {
     case Pixel::V8_T:
     case Pixel::VA8_T:
     case Pixel::RGB8_T:
     case Pixel::RGBA8_T:
-      bitDepth = 8;
+      bit_depth = 8;
       break;
     case Pixel::V16_T:
     case Pixel::VA16_T:
     case Pixel::RGB16_T:
     case Pixel::RGBA16_T:
-      bitDepth = 16;
+      bit_depth = 16;
       break;
     case Pixel::RGBf_T:
     case Pixel::RGBE8_T:
@@ -218,23 +218,23 @@ void writePng(std::ostream &output, Image &img) {
       return;
   }
 
-  png_byte colorType;
+  png_byte color_type;
   switch(img.type()) {
     case Pixel::V8_T:
     case Pixel::V16_T:
-      colorType = PNG_COLOR_TYPE_GRAY;
+      color_type = PNG_COLOR_TYPE_GRAY;
       break;
     case Pixel::VA8_T:
     case Pixel::VA16_T:
-      colorType = PNG_COLOR_TYPE_GRAY_ALPHA;
+      color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
       break;
     case Pixel::RGB8_T:
     case Pixel::RGB16_T:
-      colorType = PNG_COLOR_TYPE_RGB;
+      color_type = PNG_COLOR_TYPE_RGB;
       break;
     case Pixel::RGBA8_T:
     case Pixel::RGBA16_T:
-      colorType = PNG_COLOR_TYPE_RGB_ALPHA;
+      color_type = PNG_COLOR_TYPE_RGB_ALPHA;
       break;
 
     default:
@@ -247,18 +247,18 @@ void writePng(std::ostream &output, Image &img) {
   Pixel::Type type = img.type();
 
   std::cout << "writing PNG width=" << width << " height=" << height
-      << " bitDepth=" << (int) bitDepth
+      << " bit_depth=" << (int) bit_depth
       << " type=" << Pixel::name(type) << std::endl;
 
   png_set_IHDR(
       writer.s, writer.i,
       width, height,
-      bitDepth, colorType,
+      bit_depth, color_type,
       PNG_INTERLACE_NONE,
       PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
   int transform = PNG_TRANSFORM_IDENTITY;
-  if(bitDepth == 16 && shouldSwapEndian())
+  if(bit_depth == 16 && shouldSwapEndian())
     transform = PNG_TRANSFORM_SWAP_ENDIAN;
 
   png_bytepp rows = new png_bytep[height];

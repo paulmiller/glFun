@@ -61,10 +61,10 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8  & p);
 // "down", lower columns are "left", and higher columns are "right".
 class Image {
 private:
-  char *mData;
-  Pixel::Type mType;
-  int mWidth;
-  int mHeight;
+  char *data_;
+  Pixel::Type type_;
+  int width_;
+  int height_;
 
 public:
   Image(); // Create uninitialized image
@@ -86,24 +86,24 @@ public:
 // iterate over pixels in an Image in a configurable order
 class Fliperator {
 private:
-  Image* mImage;
-  int mRow, mCol;
-  bool mRowMajor, mRowOrder, mColOrder, mDone;
+  Image* image_;
+  int row_, col_;
+  bool row_major_, row_order_, col_order_, done_;
 
   bool advanceRow();
   bool advanceCol();
 
 public:
-  // rowMajor - if true, iterate in row-major order
-  // rowOrder - if true, iterate from top to bottom
-  // colOrder - if true, iterate from left to right
+  // row_major - if true, iterate in row-major order
+  // row_order - if true, iterate from top to bottom
+  // col_order - if true, iterate from left to right
   // e.g.
   // (true, true, true) - left to right, then top to bottom (normal)
   // (true, true, false) - right to left, then top to bottom (horizontal flip)
   // (false, true, true) - top to bottom, then left to right (diagonal flip)
   // (false, false, false) - bottom to top, then right to left (diagonal flip)
   // (false, false, true) - bottom to top, then left to right (rotation)
-  Fliperator(Image* image, bool rowMajor, bool rowOrder, bool colOrder);
+  Fliperator(Image* image, bool row_major, bool row_order, bool col_order);
 
   void* operator*();
   Fliperator& operator++();

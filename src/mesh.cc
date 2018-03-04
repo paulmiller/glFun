@@ -2,12 +2,12 @@
 
 #include "util.h"
 
-UVCoord::UVCoord(float u_, float v_) : u(u_), v(v_) {}
+UVCoord::UVCoord(float u, float v) : u(u), v(v) {}
 
 Tri::Tri(int v1, int v2, int v3) :
-  vertIdxs{v1, v2, v3},
-  normalIdxs{-1, -1, -1},
-  uvIdxs{-1, -1, -1}
+  vert_idxs{v1, v2, v3},
+  normal_idxs{-1, -1, -1},
+  uv_idxs{-1, -1, -1}
 {}
 
 Tri::Tri(
@@ -15,19 +15,19 @@ Tri::Tri(
   int n1, int n2, int n3,
   int t1, int t2, int t3
 ) :
-  vertIdxs{v1, v2, v3},
-  normalIdxs{n1, n2, n3},
-  uvIdxs{t1, t2, t3}
+  vert_idxs{v1, v2, v3},
+  normal_idxs{n1, n2, n3},
+  uv_idxs{t1, t2, t3}
 {}
 
-Mesh::Mesh(const char* name) : mName(name) {}
+Mesh::Mesh(const char* name) : name(name) {}
 
 std::vector<Mesh> Mesh::parseObj(std::istream &input) {
   static const int MAX_LINE = 4096;
 
   std::vector<Mesh> objects;
   char line[MAX_LINE];
-  char objectName[MAX_LINE];
+  char object_name[MAX_LINE];
   while(true) {
     input.getline(line, sizeof(line));
 
@@ -57,31 +57,31 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
       hasPrefix("usemtl", line)
     ) {
       // Ignore comments, groups, and materials.
-    } else if(1 == sscanf(line, "o %s", objectName)) {
+    } else if(1 == sscanf(line, "o %s", object_name)) {
       // Start a new object
-      objects.emplace_back(objectName);
+      objects.emplace_back(object_name);
     } else if(3 == sscanf(line, "v %f %f %f", &x, &y, &z)) {
       // Add a vertex
       provideObject();
-      objects.back().mVerts.emplace_back(x, y, z);
+      objects.back().verts.emplace_back(x, y, z);
     } else if(2 == sscanf(line, "vt %f %f", &u, &v)) {
       // Add a UV coordinate
       provideObject();
-      objects.back().mUVs.emplace_back(u, 1.0f - v);
+      objects.back().uvs.emplace_back(u, 1.0f - v);
     } else if(3 == sscanf(line, "vn %f %f %f", &x, &y, &z)) {
       // Add a normal vector
       provideObject();
-      objects.back().mNormals.emplace_back(x, y, z);
+      objects.back().normals.emplace_back(x, y, z);
     } else if(6 ==
         sscanf(line, "f %u %u %u", &v1, &v2, &v3)) {
       // TODO Add a triangle
       provideObject();
-      objects.back().mTris.emplace_back(v1-1, v2-1, v3-1);
+      objects.back().tris.emplace_back(v1-1, v2-1, v3-1);
     } else if(6 == sscanf(line, "f %u/%u %u/%u %u/%u",
         &v1, &t1, &v2, &t2, &v3, &t3)) {
       // Add a triangle with UV
       provideObject();
-      objects.back().mTris.emplace_back(
+      objects.back().tris.emplace_back(
           int(v1)-1, int(v2)-1, int(v3)-1,
                  -1,        -1,        -1,
           int(t1)-1, int(t2)-1, int(t3)-1
@@ -90,7 +90,7 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
         &v1, &n1, &v2, &n2, &v3, &n3)) {
       // Add a triangle with normals
       provideObject();
-      objects.back().mTris.emplace_back(
+      objects.back().tris.emplace_back(
         int(v1)-1, int(v2)-1, int(v3)-1, 
         int(n1)-1, int(n2)-1, int(n3)-1,
                -1,        -1,        -1
@@ -99,7 +99,7 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
         &v1, &t1, &n1, &v2, &t2, &n2, &v3, &t3, &n3)) {
       // Add a triangle with UV and normals
       provideObject();
-      objects.back().mTris.emplace_back(
+      objects.back().tris.emplace_back(
           int(v1)-1, int(v2)-1, int(v3)-1,
           int(n1)-1, int(n2)-1, int(n3)-1,
           int(t1)-1, int(t2)-1, int(t3)-1
@@ -111,33 +111,33 @@ std::vector<Mesh> Mesh::parseObj(std::istream &input) {
 
   // Verify each object's triangles' vert, normal, and UV indices are within
   // bounds.
-  for(auto objectIt = objects.begin(); objectIt != objects.end(); objectIt++) {
-    int vertNum = objectIt->mVerts.size();
-    int normalNum = objectIt->mNormals.size();
-    int uvNum = objectIt->mUVs.size();
-      std::cout << "objMesh: loaded object \"" << objectIt->mName << "\" with "
-          << vertNum << " vertices, " << normalNum << " normals, "
-          << uvNum << " UVs, " << objectIt->mTris.size() << " triangles\n";
+  for(auto object_it = objects.begin(); object_it != objects.end(); object_it++) {
+    int vert_num = object_it->verts.size();
+    int normal_num = object_it->normals.size();
+    int uv_num = object_it->uvs.size();
+      std::cout << "objMesh: loaded object \"" << object_it->name << "\" with "
+          << vert_num << " vertices, " << normal_num << " normals, "
+          << uv_num << " UVs, " << object_it->tris.size() << " triangles\n";
     int removed = 0;
-    for(auto triIt = objectIt->mTris.begin(); triIt != objectIt->mTris.end();) {
-      bool inBounds = true;
+    for(auto tri_it = object_it->tris.begin(); tri_it != object_it->tris.end();) {
+      bool in_bounds = true;
       for(int i = 0; i < 3; i++) {
-        if(triIt->vertIdxs[i] >= vertNum ||
-            triIt->normalIdxs[i] >= normalNum ||
-            triIt->uvIdxs[i] >= uvNum) {
-          inBounds = false;
+        if(tri_it->vert_idxs[i] >= vert_num ||
+            tri_it->normal_idxs[i] >= normal_num ||
+            tri_it->uv_idxs[i] >= uv_num) {
+          in_bounds = false;
           break;
         }
       }
-      if(inBounds) {
-        triIt++;
+      if(in_bounds) {
+        tri_it++;
       } else {
-        triIt = objectIt->mTris.erase(triIt);
+        tri_it = object_it->tris.erase(tri_it);
         removed++;
       }
     }
     if(removed) {
-      std::cout << "objMesh: object \"" << objectIt->mName
+      std::cout << "objMesh: object \"" << object_it->name
           << "\" indices out of range; removed " << removed << " triangle(s)\n";
     }
   }
@@ -198,10 +198,10 @@ namespace {
 #include <iostream>
 
 bool Mesh::intersects(const Vec3 &start, const Vec3 &end) const {
-  for(auto triIt = mTris.begin(); triIt != mTris.end(); ++triIt) {
-    const Vec3 &A = mVerts[triIt->vertIdxs[0]];
-    const Vec3 &B = mVerts[triIt->vertIdxs[1]];
-    const Vec3 &C = mVerts[triIt->vertIdxs[2]];
+  for(auto tri_it = tris.begin(); tri_it != tris.end(); ++tri_it) {
+    const Vec3 &A = verts[tri_it->vert_idxs[0]];
+    const Vec3 &B = verts[tri_it->vert_idxs[1]];
+    const Vec3 &C = verts[tri_it->vert_idxs[2]];
     if(::intersects(start, end, A, B, C))
       return true;
   }

@@ -16,8 +16,8 @@
 
 int submain();
 
-const int defaultWidth = 512;
-const int defaultHeight = 512;
+const int default_width = 512;
+const int default_height = 512;
 
 /*
 enum KeyCommand {
@@ -38,8 +38,8 @@ public:
   const int code;
   bool pressed;
 
-  KeyInput(KeyCommand command_, int code_) :
-    command(command_), code(code_), pressed(false) {};
+  KeyInput(KeyCommand command, int code) :
+    command(command), code(code), pressed(false) {};
 };
 
 KeyInput controls[] = {
@@ -54,10 +54,10 @@ KeyInput controls[] = {
   {ESCAPE,       GLFW_KEY_ESCAPE}
 };
 
-const int controlNum = sizeof(controls) / sizeof(KeyInput);
+const int control_num = sizeof(controls) / sizeof(KeyInput);
 
 bool getCommandState(KeyCommand command) {
-  for(int i = 0; i < controlNum; i++) {
+  for(int i = 0; i < control_num; i++) {
     if(command == controls[i].command)
       return controls[i].pressed;
   }
@@ -66,7 +66,7 @@ bool getCommandState(KeyCommand command) {
 }
 
 void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  for(int i = 0; i < controlNum; i++) {
+  for(int i = 0; i < control_num; i++) {
     if(key == controls[i].code) {
       if(action == GLFW_PRESS)
         controls[i].pressed = true;
@@ -83,9 +83,9 @@ void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
     glfwGetCursorPos(window, &xpos, &ypos);
     std::cout << "click x=" << xpos << " y=" << ypos << std::endl;
     Vec3 near, far;
-    cameraPtr->castPixel(int(xpos), int(ypos), near, far);
+    camera_ptr->castPixel(int(xpos), int(ypos), near, far);
     std::cout << "cast near=" << near << " far=" << far << std::endl;
-    std::cout << "hit=" << widgetPtr->intersects(near, far - near) << std::endl;
+    std::cout << "hit=" << widget_ptr->intersects(near, far - near) << std::endl;
   }
 }
 */
@@ -120,12 +120,12 @@ int submain() {
 
   assert(checkGL());
 
-  GlViewportControl viewportControl;
-  CameraControl cameraControl(defaultWidth, defaultHeight);
+  GlViewportControl viewport_control;
+  CameraControl camera_control(default_width, default_height);
   GlfwWindow window;
-  window.addObserver(&viewportControl);
-  window.addObserver(&cameraControl);
-  window.create(defaultWidth, defaultHeight, "toy");
+  window.addObserver(&viewport_control);
+  window.addObserver(&camera_control);
+  window.create(default_width, default_height, "toy");
 
   assert(checkGL());
 
@@ -142,37 +142,37 @@ int submain() {
     std::cout << "glewInit failed" << std::endl;
     return 1;
   }
-  GLenum glewError = glGetError();
-  assert(glewError == GL_NO_ERROR || glewError == GL_INVALID_ENUM);
+  GLenum glew_error = glGetError();
+  assert(glew_error == GL_NO_ERROR || glew_error == GL_INVALID_ENUM);
 
   //GLuint color = pngTex("res/suzanne-color.png");
   GLuint color = pngTex("res/axes.png");
 
   assert(checkGL());
 
-  GLuint arrayId;
-  glGenVertexArrays(1, &arrayId);
-  glBindVertexArray(arrayId);
+  GLuint array_id;
+  glGenVertexArrays(1, &array_id);
+  glBindVertexArray(array_id);
 
-  //std::ifstream widgetInput("res/suzanne.obj", std::ifstream::in);
-  std::ifstream widgetInput("res/axes.obj", std::ifstream::in);
-  std::vector<Mesh> widgets = Mesh::parseObj(widgetInput);
-  GLuint vertBufferId = vertVBO(widgets[0]);
-  GLuint uvBufferId = uvVBO(widgets[0]);
-  GLuint normBufferId = normVBO(widgets[0]);
-
-  assert(checkGL());
-
-  GLuint vertShaderId = loadShader("src/vert.glsl", GL_VERTEX_SHADER);
-  GLuint fragShaderId = loadShader("src/frag.glsl", GL_FRAGMENT_SHADER);
-  GLuint programId = linkProgram(vertShaderId, fragShaderId);
-  glDeleteShader(vertShaderId);
-  glDeleteShader(fragShaderId);
+  //std::ifstream widget_input("res/suzanne.obj", std::ifstream::in);
+  std::ifstream widget_input("res/axes.obj", std::ifstream::in);
+  std::vector<Mesh> widgets = Mesh::parseObj(widget_input);
+  GLuint vert_buffer_id = vertVBO(widgets[0]);
+  GLuint uv_buffer_id = uvVBO(widgets[0]);
+  GLuint norm_buffer_id = normVBO(widgets[0]);
 
   assert(checkGL());
 
-  GLuint MatrixID = glGetUniformLocation(programId, "MVP");
-  GLuint samplerId = glGetUniformLocation(programId, "myTextureSampler");
+  GLuint vert_shader_id = loadShader("src/vert.glsl", GL_VERTEX_SHADER);
+  GLuint frag_shader_id = loadShader("src/frag.glsl", GL_FRAGMENT_SHADER);
+  GLuint program_id = linkProgram(vert_shader_id, frag_shader_id);
+  glDeleteShader(vert_shader_id);
+  glDeleteShader(frag_shader_id);
+
+  assert(checkGL());
+
+  GLuint matrix_id = glGetUniformLocation(program_id, "MVP");
+  GLuint sampler_id = glGetUniformLocation(program_id, "myTextureSampler");
 
   assert(checkGL());
 
@@ -185,64 +185,64 @@ int submain() {
   int64_t frame = 0;
   while(!glfwWindowShouldClose(window)) {
     /*
-    bool goingForward  = getCommandState(FORWARD);
-    bool goingBackward = getCommandState(BACKWARD);
-    bool goingLeft     = getCommandState(STRAFE_LEFT);
-    bool goingRight    = getCommandState(STRAFE_RIGHT);
-    bool goingUp       = getCommandState(UP);
-    bool goingDown     = getCommandState(DOWN);
+    bool going_forward  = getCommandState(FORWARD);
+    bool going_backward = getCommandState(BACKWARD);
+    bool going_left     = getCommandState(STRAFE_LEFT);
+    bool going_right    = getCommandState(STRAFE_RIGHT);
+    bool going_up       = getCommandState(UP);
+    bool going_down     = getCommandState(DOWN);
 
     Vec3 move = Vec3::ZERO;
 
-    if(goingForward && !goingBackward)
+    if(going_forward && !going_backward)
       move += Vec3(0, 0, -1);
-    else if(goingBackward && !goingForward)
+    else if(going_backward && !going_forward)
       move += Vec3(0, 0, 1);
 
-    if(goingLeft && !goingRight)
+    if(going_left && !going_right)
       move += Vec3(-1, 0, 0);
-    else if(goingRight && !goingLeft)
+    else if(going_right && !going_left)
       move += Vec3(1, 0, 0);
 
-    if(goingUp && !goingDown)
+    if(going_up && !going_down)
       move += Vec3(0, 1, 0);
-    else if(goingDown && !goingUp)
+    else if(going_down && !going_up)
       move += Vec3(0, -1, 0);
 
     if(move != Vec3::ZERO) {
       move = move.unit() * 0.05;
-      cameraObj.moveLocal(move);
+      camera_obj.moveLocal(move);
     }
 
-    bool turningLeft  = getCommandState(TURN_LEFT);
-    bool turningRight = getCommandState(TURN_RIGHT);
+    bool turning_left  = getCommandState(TURN_LEFT);
+    bool turning_right = getCommandState(TURN_RIGHT);
 
-    if(turningLeft && !turningRight)
-      cameraObj.rot *= Quat::rotation(Vec3::UNIT_Y, 0.03);
-    else if(turningRight && !turningLeft)
-      cameraObj.rot *= Quat::rotation(Vec3::UNIT_Y, -0.03);
+    if(turning_left && !turning_right)
+      camera_obj.rot *= Quat::rotation(Vec3::UNIT_Y, 0.03);
+    else if(turning_right && !turning_left)
+      camera_obj.rot *= Quat::rotation(Vec3::UNIT_Y, -0.03);
 
-    Vec3 forward = (Mat4::rotation(cameraObj.rot) * -Vec4::UNIT_Z).dropW();
-    camera.look(cameraObj.pos, forward, Vec3::UNIT_Y);
+    Vec3 forward = (Mat4::rotation(camera_obj.rot) * -Vec4::UNIT_Z).dropW();
+    camera.look(camera_obj.pos, forward, Vec3::UNIT_Y);
     */
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(programId);
+    glUseProgram(program_id);
 
-    glUniformMatrix4fv(MatrixID, 1, GL_FALSE,
-      cameraControl.getCam()->getTransform().data());
+    glUniformMatrix4fv(matrix_id, 1, GL_FALSE,
+      camera_control.getCam()->getTransform().data());
 
     assert(checkGL());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, color);
-    glUniform1i(samplerId, 0);
+    glUniform1i(sampler_id, 0);
 
     assert(checkGL());
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertBufferId);
+    glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
     glVertexAttribPointer(
       0,        // index (attribute)
       3,        // size
@@ -255,7 +255,7 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
+    glBindBuffer(GL_ARRAY_BUFFER, uv_buffer_id);
     glVertexAttribPointer(
       1,        // index (attribute)
       2,        // size
@@ -268,7 +268,7 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, normBufferId);
+    glBindBuffer(GL_ARRAY_BUFFER, norm_buffer_id);
     glVertexAttribPointer(
       2,        // index (attribute)
       3,        // size
@@ -280,7 +280,7 @@ int submain() {
 
     assert(checkGL());
 
-    glDrawArrays(GL_TRIANGLES, 0, widgets[0].mTris.size() * 3);
+    glDrawArrays(GL_TRIANGLES, 0, widgets[0].tris.size() * 3);
 
     assert(checkGL());
 
@@ -296,10 +296,10 @@ int submain() {
     frame++;
   }
 
-  glDeleteProgram(programId);
-  glDeleteBuffers(1, &uvBufferId);
-  glDeleteBuffers(1, &vertBufferId);
-  glDeleteVertexArrays(1, &arrayId);
+  glDeleteProgram(program_id);
+  glDeleteBuffers(1, &uv_buffer_id);
+  glDeleteBuffers(1, &vert_buffer_id);
+  glDeleteVertexArrays(1, &array_id);
   glDeleteTextures(1, &color);
 
   assert(checkGL());

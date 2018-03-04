@@ -155,121 +155,122 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8 & p) {
 }
 
 Image::Image() :
-  mData(nullptr), mType(Pixel::NONE_T), mWidth(0), mHeight(0) {}
+  data_(nullptr), type_(Pixel::NONE_T), width_(0), height_(0) {}
 
-Image::Image(int width, int height, Pixel::Type type) : mData(nullptr) {
+Image::Image(int width, int height, Pixel::Type type) : data_(nullptr) {
   init(width, height, type);
 }
 
 Image::Image(Image&& src) :
-  mData(src.mData), mType(src.mType), mWidth(src.mWidth), mHeight(src.mHeight)
+  data_(src.data_), type_(src.type_), width_(src.width_), height_(src.height_)
 {
-  src.mData = nullptr;
+  src.data_ = nullptr;
 }
 
 Image::~Image() {
-  delete[] mData;
+  delete[] data_;
 }
 
 Image& Image::operator=(Image&& src) {
-  delete[] mData;
+  delete[] data_;
 
-  mData = src.mData;
-  mType = src.mType;
-  mWidth = src.mWidth;
-  mHeight = src.mHeight;
+  data_ = src.data_;
+  type_ = src.type_;
+  width_ = src.width_;
+  height_ = src.height_;
 
-  src.mData = nullptr;
-  src.mType = Pixel::NONE_T;
-  src.mWidth = 0;
-  src.mHeight = 0;
+  src.data_ = nullptr;
+  src.type_ = Pixel::NONE_T;
+  src.width_ = 0;
+  src.height_ = 0;
 
   return *this;
 }
 
 void Image::init(int width, int height, Pixel::Type type) {
-  assert(mData == nullptr);
-  mWidth = width;
-  mHeight = height;
-  mType = type;
+  assert(data_ == nullptr);
+  width_ = width;
+  height_ = height;
+  type_ = type;
   std::size_t size = width * height * Pixel::size(type);
-  mData = new char[size];
-  memset(mData, 0, size);
+  data_ = new char[size];
+  memset(data_, 0, size);
 }
 
 void Image::clear() {
-  delete[] mData;
-  mData = nullptr;
-  mType = Pixel::NONE_T;
-  mWidth = 0;
-  mHeight = 0;
+  delete[] data_;
+  data_ = nullptr;
+  type_ = Pixel::NONE_T;
+  width_ = 0;
+  height_ = 0;
 }
 
 int Image::width() const {
-  return mWidth;
+  return width_;
 }
 
 int Image::height() const {
-  return mHeight;
+  return height_;
 }
 
 Pixel::Type Image::type() const {
-  return mType;
+  return type_;
 }
 
 void *Image::data() {
-  return mData;
+  return data_;
 }
 
 void *Image::getRowPtr(int row) {
-  return mData + (mWidth * row) * Pixel::size(mType);
+  return data_ + (width_ * row) * Pixel::size(type_);
 }
 
 void *Image::getPixelPtr(int row, int col) {
-  return mData + (mWidth * row + col) * Pixel::size(mType);
+  return data_ + (width_ * row + col) * Pixel::size(type_);
 }
 
 const void *Image::getPixelPtr(int row, int col) const {
-  return mData + (mWidth * row + col) * Pixel::size(mType);
+  return data_ + (width_ * row + col) * Pixel::size(type_);
 }
 
 Fliperator::Fliperator(
-  Image* image, bool rowMajor, bool rowOrder, bool colOrder
+  Image* image, bool row_major, bool row_order, bool col_order
 ) :
-  mImage(image), mRowMajor(rowMajor), mRowOrder(rowOrder), mColOrder(colOrder),
-  mDone(false)
+  image_(image),
+  row_major_(row_major), row_order_(row_order), col_order_(col_order),
+  done_(false)
 {
-  if(rowOrder)
-    mRow = 0;
+  if(row_order)
+    row_ = 0;
   else
-    mRow = mImage->height() - 1;
+    row_ = image->height() - 1;
 
-  if(colOrder)
-    mCol = 0;
+  if(col_order)
+    col_ = 0;
   else
-    mCol = mImage->width() - 1;
+    col_ = image->width() - 1;
 }
 
 void* Fliperator::operator*() {
-  return mImage->getPixelPtr(mRow, mCol);
+  return image_->getPixelPtr(row_, col_);
 }
 
 // return true if we were on the last row
 bool Fliperator::advanceRow() {
-  if(mRowOrder) {
-    if(mRow + 1 < mImage->height()) {
-      mRow++;
+  if(row_order_) {
+    if(row_ + 1 < image_->height()) {
+      row_++;
       return false;
     } else {
-      mRow = 0;
+      row_ = 0;
       return true;
     }
   } else {
-    if(mRow > 0) {
-      mRow--;
+    if(row_ > 0) {
+      row_--;
       return false;
     } else {
-      mRow = mImage->height() - 1;
+      row_ = image_->height() - 1;
       return true;
     }
   }
@@ -277,42 +278,42 @@ bool Fliperator::advanceRow() {
 
 // return true if we were on the last column
 bool Fliperator::advanceCol() {
-  if(mColOrder) {
-    if(mCol + 1 < mImage->width()) {
-      mCol++;
+  if(col_order_) {
+    if(col_ + 1 < image_->width()) {
+      col_++;
       return false;
     } else {
-      mCol = 0;
+      col_ = 0;
       return true;
     }
   } else {
-    if(mCol > 0) {
-      mCol--;
+    if(col_ > 0) {
+      col_--;
       return false;
     } else {
-      mCol = mImage->width() - 1;
+      col_ = image_->width() - 1;
       return true;
     }
   }
 }
 
 Fliperator& Fliperator::operator++() {
-  if(mRowMajor) {
+  if(row_major_) {
     if(advanceCol()) {
       if(advanceRow())
-        mDone = true;
+        done_ = true;
     }
   } else {
     if(advanceRow()) {
       if(advanceCol())
-        mDone = true;
+        done_ = true;
     }
   }
   return *this;
 }
 
 bool Fliperator::isDone() {
-  return mDone;
+  return done_;
 }
 
 std::ostream& operator<<(std::ostream& o, const Image& image) {

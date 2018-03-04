@@ -41,27 +41,27 @@ Mat4 Mat4::rotation(const Vec3 &axis, float angle) {
   float y2 = axis.y * axis.y;
   float z2 = axis.z * axis.z;
 
-  float sinTheta = sin(angle);
-  float cosTheta = cos(angle);
+  float sin_theta = sin(angle);
+  float cos_theta = cos(angle);
 
-  float xSinTheta = axis.x * sinTheta;
-  float ySinTheta = axis.y * sinTheta;
-  float zSinTheta = axis.z * sinTheta;
+  float x_sin_theta = axis.x * sin_theta;
+  float y_sin_theta = axis.y * sin_theta;
+  float z_sin_theta = axis.z * sin_theta;
 
   return Mat4(
-    cosTheta + x2 * (1 - cosTheta),
-    xy * (1 - cosTheta) - zSinTheta,
-    xz * (1 - cosTheta) + ySinTheta,
+    cos_theta + x2 * (1 - cos_theta),
+    xy * (1 - cos_theta) - z_sin_theta,
+    xz * (1 - cos_theta) + y_sin_theta,
     0,
 
-    xy * (1 - cosTheta) + zSinTheta,
-    cosTheta + y2 * (1 - cosTheta),
-    yz * (1 - cosTheta) - xSinTheta,
+    xy * (1 - cos_theta) + z_sin_theta,
+    cos_theta + y2 * (1 - cos_theta),
+    yz * (1 - cos_theta) - x_sin_theta,
     0,
 
-    xz * (1 - cosTheta) - ySinTheta,
-    yz * (1 - cosTheta) + xSinTheta,
-    cosTheta + z2  * (1 - cosTheta),
+    xz * (1 - cos_theta) - y_sin_theta,
+    yz * (1 - cos_theta) + x_sin_theta,
+    cos_theta + z2  * (1 - cos_theta),
     0,
 
     0,
@@ -98,43 +98,43 @@ Mat4::Mat4(
   float r1c0, float r1c1, float r1c2, float r1c3,
   float r2c0, float r2c1, float r2c2, float r2c3,
   float r3c0, float r3c1, float r3c2, float r3c3
-) : mData{
+) : data_{
   r0c0, r1c0, r2c0, r3c0,
   r0c1, r1c1, r2c1, r3c1,
   r0c2, r1c2, r2c2, r3c2,
   r0c3, r1c3, r2c3, r3c3
 } {}
 
-Mat4::Mat4(const Mat4& a) : mData{
-  a.mData[ 0], a.mData[ 1], a.mData[ 2], a.mData[ 3],
-  a.mData[ 4], a.mData[ 5], a.mData[ 6], a.mData[ 7],
-  a.mData[ 8], a.mData[ 9], a.mData[10], a.mData[11],
-  a.mData[12], a.mData[13], a.mData[14], a.mData[15]
+Mat4::Mat4(const Mat4& a) : data_{
+  a.data_[ 0], a.data_[ 1], a.data_[ 2], a.data_[ 3],
+  a.data_[ 4], a.data_[ 5], a.data_[ 6], a.data_[ 7],
+  a.data_[ 8], a.data_[ 9], a.data_[10], a.data_[11],
+  a.data_[12], a.data_[13], a.data_[14], a.data_[15]
 } {}
 
 const float* Mat4::data() const {
-  return mData;
+  return data_;
 }
 
 float* Mat4::data() {
-  return mData;
+  return data_;
 }
 
 float Mat4::operator()(int row, int col) const {
   assert(0 <= row && row <= 3);
   assert(0 <= col && col <= 3);
-  return mData[4 * col + row];
+  return data_[4 * col + row];
 }
 
 float& Mat4::operator()(int row, int col) {
   assert(0 <= row && row <= 3);
   assert(0 <= col && col <= 3);
-  return mData[4 * col + row];
+  return data_[4 * col + row];
 }
 
 Mat4& Mat4::operator=(const Mat4& a) {
   for(int i = 0; i < 16; i++) {
-    mData[i] = a.mData[i];
+    data_[i] = a.data_[i];
   }
   return *this;
 }
@@ -248,7 +248,7 @@ const Vec2 Vec2::UNIT_X(1, 0);
 const Vec2 Vec2::UNIT_Y(0, 1);
 
 Vec2::Vec2() : Vec2(ZERO) {} // TODO initialization order bugs?
-Vec2::Vec2(float _x, float _y) : x(_x), y(_y) {}
+Vec2::Vec2(float x_, float y_) : x(x_), y(y_) {}
 Vec2::Vec2(const Vec2 &a) : x(a.x), y(a.y) {};
 
 Vec2& Vec2::operator=(const Vec2& a) {
@@ -347,8 +347,8 @@ const Vec3 Vec3::UNIT_Y(0, 1, 0);
 const Vec3 Vec3::UNIT_Z(0, 0, 1);
 
 Vec3::Vec3() : Vec3(ZERO) {} // TODO initialization order bugs?
-Vec3::Vec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
-Vec3::Vec3(const Vec2 &xy, float _z) : x(xy.x), y(xy.y), z(_z) {}
+Vec3::Vec3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
+Vec3::Vec3(const Vec2 &xy, float z_) : x(xy.x), y(xy.y), z(z_) {}
 Vec3::Vec3(const Vec3 &a) : x(a.x), y(a.y), z(a.z) {};
 
 Vec3& Vec3::operator=(const Vec3& a) {
@@ -464,9 +464,9 @@ const Vec4 Vec4::UNIT_Z(0, 0, 1, 0);
 const Vec4 Vec4::UNIT_W(0, 0, 0, 1);
 
 Vec4::Vec4() : Vec4(ZERO) {} // TODO initialization order bugs?
-Vec4::Vec4(float _x, float _y, float _z, float _w)
-    : x(_x), y(_y), z(_z), w(_w) {}
-Vec4::Vec4(const Vec3 &xyz, float _w) : x(xyz.x), y(xyz.y), z(xyz.z), w(_w) {}
+Vec4::Vec4(float x_, float y_, float z_, float w_)
+    : x(x_), y(y_), z(z_), w(w_) {}
+Vec4::Vec4(const Vec3 &xyz, float w_) : x(xyz.x), y(xyz.y), z(xyz.z), w(w_) {}
 Vec4::Vec4(const Vec4 &a) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 
 Vec4& Vec4::operator=(const Vec4& a) {
@@ -614,8 +614,8 @@ float det(const Vec3 &A, const Vec3 &B, const Vec3 &C) {
        - C.x * B.y * A.z - B.x * A.y * C.z - A.x * C.y * B.z;
 }
 
-Ray::Ray(const Vec3 &_origin, const Vec3 &_direction) :
-  origin(_origin), direction(_direction) {}
+Ray::Ray(const Vec3 &origin_, const Vec3 &direction_) :
+  origin(origin_), direction(direction_) {}
 
 Vec4 operator*(const Mat4 &m, const Vec4 &v) {
   return Vec4(

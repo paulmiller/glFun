@@ -12,12 +12,12 @@ ANON_TEST_CASE() {
     13, 14, 15, 16
   );
 
-  Mat4 aCopy(a);
-  REQUIRE(a == aCopy);
+  Mat4 a_copy(a);
+  REQUIRE(a == a_copy);
 
-  Mat4 aAssign(Mat4::ZERO);
-  aAssign = a;
-  REQUIRE(a == aAssign);
+  Mat4 a_assign(Mat4::ZERO);
+  a_assign = a;
+  REQUIRE(a == a_assign);
 
   REQUIRE(a - a == Mat4::ZERO);
   REQUIRE(a + Mat4::ZERO == a);
@@ -67,12 +67,12 @@ ANON_TEST_CASE() {
 ANON_TEST_CASE() {
   Vec2 a(4, 3);
 
-  Vec2 aCopy(a);
-  REQUIRE(a == aCopy);
+  Vec2 a_copy(a);
+  REQUIRE(a == a_copy);
 
-  Vec2 aAssign(0, 0);
-  REQUIRE(a == (aAssign = a));
-  REQUIRE(a == aAssign);
+  Vec2 a_assign(0, 0);
+  REQUIRE(a == (a_assign = a));
+  REQUIRE(a == a_assign);
 
   REQUIRE(a.len() == 5);
   REQUIRE(a.len2() == 25);
@@ -97,12 +97,12 @@ ANON_TEST_CASE() {
 void testVec3() {
   Vec3 a(1, 4, 8);
 
-  Vec3 aCopy(a);
-  REQUIRE(a == aCopy);
+  Vec3 a_copy(a);
+  REQUIRE(a == a_copy);
 
-  Vec3 aAssign(0, 0, 0);
-  REQUIRE(a == (aAssign = a));
-  REQUIRE(a == aAssign);
+  Vec3 a_assign(0, 0, 0);
+  REQUIRE(a == (a_assign = a));
+  REQUIRE(a == a_assign);
 
   REQUIRE(a.len() == 9);
   REQUIRE(a.len2() == 81);
@@ -131,12 +131,12 @@ void testVec3() {
 ANON_TEST_CASE() {
   Vec4 a(1, 2, 3, 4);
 
-  Vec4 aCopy(a);
-  REQUIRE(a == aCopy);
+  Vec4 a_copy(a);
+  REQUIRE(a == a_copy);
 
-  Vec4 aAssign(0, 0, 0, 0);
-  aAssign = a;
-  REQUIRE(a == aAssign);
+  Vec4 a_assign(0, 0, 0, 0);
+  a_assign = a;
+  REQUIRE(a == a_assign);
 
   Vec4 b(0, -1, 1, -2);
 

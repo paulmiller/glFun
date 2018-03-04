@@ -5,27 +5,27 @@
 #include <cassert>
 #include <cmath>
 
-Camera::Camera() : mFrameWidthPx(0), mFrameHeightPx(0) {}
+Camera::Camera() : frame_width_px_(0), frame_height_px_(0) {}
 
-void Camera::setResolution(int widthPx, int heightPx) {
-  assert(widthPx > 0);
-  assert(heightPx > 0);
-  mFrameWidthPx = widthPx;
-  mFrameHeightPx = heightPx;
+void Camera::setResolution(int width_px, int height_px) {
+  assert(width_px > 0);
+  assert(height_px > 0);
+  frame_width_px_ = width_px;
+  frame_height_px_ = height_px;
 }
 
 void Camera::setFrustum(
-  float nearClip, float farClip, float horizFOV, float aspect
+  float near_clip, float far_clip, float horiz_fov, float aspect
 ) {
-  assert(nearClip > 0);
-  assert(farClip > nearClip);
-  assert(horizFOV > 0);
-  assert(horizFOV < PI_f);
+  assert(near_clip > 0);
+  assert(far_clip > near_clip);
+  assert(horiz_fov > 0);
+  assert(horiz_fov < PI_f);
   assert(aspect > 0);
 
-  float n = nearClip;
-  float f = farClip;
-  float r = n * tan(horizFOV / 2);
+  float n = near_clip;
+  float f = far_clip;
+  float r = n * tan(horiz_fov / 2);
   float t = r / aspect;
 
   /*
@@ -55,14 +55,14 @@ void Camera::setFrustum(
     2f / (f - n) - 1 = a
   */
 
-  mProj = Mat4(
+  proj_ = Mat4(
     n/r,    0,           0,           0,
        0, n/t,           0,           0,
        0,   0, 2*f/(f-n)-1, 2*f*n/(f-n),
        0,   0,          -1,           0
   );
 
-  mInvProj = Mat4(
+  proj_inverse_ = Mat4(
     r/n,   0,             0,             0,
       0, t/n,             0,             0,
       0,   0,             0,            -1,
@@ -78,7 +78,7 @@ void Camera::look(const Vec3 &eye, const Vec3 &forward, const Vec3 &up) {
 
   const Vec3 &e = eye;
 
-  mView = Mat4(
+  view_ = Mat4(
     r.x, r.y, r.z, 0,
     u.x, u.y, u.z, 0,
     b.x, b.y, b.z, 0,
@@ -90,7 +90,7 @@ void Camera::look(const Vec3 &eye, const Vec3 &forward, const Vec3 &up) {
     0, 0, 0,    1
   );
 
-  mInvView = Mat4(
+  view_inverse_ = Mat4(
     r.x, u.x, b.x, e.x,
     r.y, u.y, b.y, e.y,
     r.z, u.z, b.z, e.z,
@@ -103,25 +103,25 @@ void Camera::lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up) {
 }
 
 Mat4 Camera::getTransform() const {
-  return mProj * mView;
+  return proj_ * view_;
 }
 
 Mat4 Camera::getInvTransform() const {
-  return mInvView * mInvProj;
+  return view_inverse_ * proj_inverse_;
 }
 
-void Camera::castPixel(int xPx, int yPx, Vec3 &near, Vec3 &far) const {
+void Camera::castPixel(int x_px, int y_px, Vec3 &near, Vec3 &far) const {
   Mat4 inv = getInvTransform();
 
   // Map pixel indices to screen coordinates
-  float x = linearMap(xPx, -0.5f, mFrameWidthPx  - 0.5f, -1.0f,  1.0f);
-  float y = linearMap(yPx, -0.5f, mFrameHeightPx - 0.5f,  1.0f, -1.0f);
+  float x = linearMap(x_px, -0.5f, frame_width_px_  - 0.5f, -1.0f,  1.0f);
+  float y = linearMap(y_px, -0.5f, frame_height_px_ - 0.5f,  1.0f, -1.0f);
 
   // Points defining the ray, in viewing-volume-space
-  Vec3 viewNear(x, y,  1);
-  Vec3 viewFar (x, y, -1);
+  Vec3 view_near(x, y,  1);
+  Vec3 view_far (x, y, -1);
 
   // Points, in world-space
-  near = (inv * Vec4(viewNear, 1)).unHomogenize();
-  far  = (inv * Vec4(viewFar , 1)).unHomogenize();
+  near = (inv * Vec4(view_near, 1)).unHomogenize();
+  far  = (inv * Vec4(view_far , 1)).unHomogenize();
 }

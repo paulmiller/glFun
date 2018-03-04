@@ -11,21 +11,21 @@
 
 /* example to convert HDR to PNG:
 
-  std::ifstream testHdrInput("probes/uffizi_probe.hdr", std::ifstream::binary);
+  std::ifstream test_hdr_input("probes/uffizi_probe.hdr", std::ifstream::binary);
   Image testHdr;
   try {
-    testHdr = readHdr(testHdrInput);
+    testHdr = read_hdr(test_hdr_input);
   } catch(OhNo ohno) {
     std::cout << ohno << std::endl;
   }
   assert(testHdr.type() == Pixel::RGBE8_T);
   float max = -INFINITY;
   float min = INFINITY;
-  Image testF(testHdr.width(), testHdr.height(), Pixel::RGBf_T);
+  Image test_f(testHdr.width(), testHdr.height(), Pixel::RGBf_T);
   for(int r = 0; r < testHdr.height(); r++) {
     for(int c = 0; c < testHdr.width(); c++) {
       Pixel::RGBE8* src = static_cast<Pixel::RGBE8*>(testHdr.getPixelPtr(r, c));
-      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(testF.getPixelPtr(r, c));
+      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(test_f.getPixelPtr(r, c));
       dst->R = float(src->R) * pow(2.0f, float(src->E) - 100);
       dst->G = float(src->G) * pow(2.0f, float(src->E) - 100);
       dst->B = float(src->B) * pow(2.0f, float(src->E) - 100);
@@ -37,24 +37,24 @@
   std::cout << "min=" << min << " max=" << max << '\n';
   for(int r = 0; r < testHdr.height(); r++) {
     for(int c = 0; c < testHdr.width(); c++) {
-      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(testF.getPixelPtr(r, c));
+      Pixel::RGBf*  dst = static_cast<Pixel::RGBf* >(test_f.getPixelPtr(r, c));
       dst->R /= max;
       dst->G /= max;
       dst->B /= max;
     }
   }
-  Image testPng(testHdr.width(), testHdr.height(), Pixel::RGB8_T);
+  Image test_png(testHdr.width(), testHdr.height(), Pixel::RGB8_T);
   for(int r = 0; r < testHdr.height(); r++) {
     for(int c = 0; c < testHdr.width(); c++) {
-      Pixel::RGBf* src = static_cast<Pixel::RGBf*>(testF.getPixelPtr(r, c));
-      Pixel::RGB8* dst = static_cast<Pixel::RGB8*>(testPng.getPixelPtr(r, c));
+      Pixel::RGBf* src = static_cast<Pixel::RGBf*>(test_f.getPixelPtr(r, c));
+      Pixel::RGB8* dst = static_cast<Pixel::RGB8*>(test_png.getPixelPtr(r, c));
       dst->R = uint8_t(src->R * 255.0f);
       dst->G = uint8_t(src->G * 255.0f);
       dst->B = uint8_t(src->B * 255.0f);
     }
   }
-  std::ofstream testOut("test.png", std::ifstream::binary);
-  writePng(testOut, testPng);
+  std::ofstream test_out("test.png", std::ifstream::binary);
+  writePng(test_out, test_png);
 
 */
 
@@ -82,15 +82,15 @@ namespace {
   // read a scanline of pixel data according to the new RLE scheme, not
   // counting the begin code
   void scanNewRLE(std::istream& input, std::vector<Pixel::RGBE8>& scanline) {
-    int scanlineSize = scanline.size();
+    int scanline_size = scanline.size();
     for(int channel = 0; channel < 4; channel++) {
-      for(int i = 0; i < scanlineSize;) {
+      for(int i = 0; i < scanline_size;) {
         uint8_t code;
         input.read(reinterpret_cast<char*>(&code), sizeof(code));
         if(input.fail())
           throw OHNO("HDR read code failed");
         int length = (code > 0x80) ? (code & 0x7f) : code;
-        if(i + length > scanlineSize)
+        if(i + length > scanline_size)
           throw OHNO("HDR new RLE overrun");
         // The Radiance filefmts.pdf claims a code with the high bit set
         // indicates a run. The Radiance code in color.c shows this is not
@@ -122,8 +122,8 @@ namespace {
   // read a scanline of pixel data
   void scanRLE(std::istream& input, std::vector<Pixel::RGBE8>& scanline) {
     Pixel::RGBE8 next;
-    int scanlineSize = scanline.size();
-    for(int i = 0; i < scanlineSize; i++) {
+    int scanline_size = scanline.size();
+    for(int i = 0; i < scanline_size; i++) {
       input.read(reinterpret_cast<char*>(&next), sizeof(next));
       if(input.fail())
         throw OHNO("HDR next pixel read fail");
@@ -131,7 +131,7 @@ namespace {
       if(isNewRLEBeginCode(next)) {
         if(i != 0)
           throw OHNO("HDR new RLE indicator not at start of line");
-        if(scanlineSize != ((next.B << 8) | next.E))
+        if(scanline_size != ((next.B << 8) | next.E))
           throw OHNO("HDR new RLE wrong length");
         scanNewRLE(input, scanline);
         return;
@@ -145,7 +145,7 @@ namespace {
   }
 }
 
-Image readHdr(std::istream &input) {
+Image read_hdr(std::istream &input) {
   // check signature
   char sig[HDR_SIG_BYTES];
   input.read(sig, HDR_SIG_BYTES);
@@ -158,7 +158,7 @@ Image readHdr(std::istream &input) {
   char line[MAX_LINE];
 
   // header FORMAT values
-  char formatStr[MAX_LINE];
+  char format_str[MAX_LINE];
   enum {
     NONE,
     RGBE,
@@ -168,11 +168,11 @@ Image readHdr(std::istream &input) {
 
   // header EXPOSURE values
   float exposure;
-  float exposureTotal = 1;
+  float exposure_total = 1;
 
   // header COLORCORR values
-  float rCorr, gCorr, bCorr;
-  float rCorrTotal = 1, gCorrTotal = 1, bCorrTotal = 1;
+  float r_corr, g_corr, b_corr;
+  float r_corr_total = 1, g_corr_total = 1, b_corr_total = 1;
 
   // resolution values
   char sign1[2], sign2[2], axis1[2], axis2[2];
@@ -198,26 +198,26 @@ Image readHdr(std::istream &input) {
       hasPrefix("PRIMARIES", line)
     ) {
       // ignore these header lines
-    } else if(1 == sscanf(line, "FORMAT= %s", formatStr)) {
+    } else if(1 == sscanf(line, "FORMAT= %s", format_str)) {
       // exactly 1 FORMAT line is required
       if(format != NONE)
         throw OHNO("HDR has multiple FORMAT lines");
 
-      if(!strcmp("32-bit_rle_rgbe", formatStr))
+      if(!strcmp("32-bit_rle_rgbe", format_str))
         format = RGBE;
-      else if(!strcmp("32-bit_rle_xyze", formatStr))
+      else if(!strcmp("32-bit_rle_xyze", format_str))
         format = XYZE;
       else
         throw OHNO("HDR has unrecognized FORMAT");
     } else if(1 == sscanf(line, "EXPOSURE= %f", &exposure)) {
       // any number of EXPOSURE lines are allowed
-      exposureTotal *= exposure;
+      exposure_total *= exposure;
     } else if(3 == sscanf(line, "COLORCORR= %f %f %f",
-        &rCorr, &gCorr, &bCorr)) {
+        &r_corr, &g_corr, &b_corr)) {
       // any number of COLORCORR lines are allowed
-      rCorrTotal *= rCorr;
-      gCorrTotal *= gCorr;
-      bCorrTotal *= bCorr;
+      r_corr_total *= r_corr;
+      g_corr_total *= g_corr;
+      b_corr_total *= b_corr;
     } else if(6 == sscanf(line, "%1[-+]%1[XY] %u %1[-+]%1[XY] %u",
         sign1, axis1, &size1, sign2, axis2, &size2)) {
       if(axis1[0] == axis2[0])
@@ -238,31 +238,31 @@ Image readHdr(std::istream &input) {
   // TODO use EXPOSURE & COLORCORR
 
   int width, height;
-  bool rowOrder, colOrder;
+  bool row_order, col_order;
   if(axis1[0] == 'Y') {
     // the first axis is Y: the HDR file is in row-major order
     width = size2;
     height = size1;
-    rowOrder = sign1[0] == '-';
-    colOrder = sign2[0] == '+';
+    row_order = sign1[0] == '-';
+    col_order = sign2[0] == '+';
   } else {
     // the first axis is X: the HDR file is in column-major order
     width = size1;
     height = size2;
-    rowOrder = sign2[0] == '-';
-    colOrder = sign1[0] == '+';
+    row_order = sign2[0] == '-';
+    col_order = sign1[0] == '+';
   }
   Image image(width, height, Pixel::RGBE8_T);
 
   std::cout << "reading HDR format=" << format
-      << " exposureTotal=" << exposureTotal
-      << " rCorrTotal=" << rCorrTotal << " gCorrTotal=" << gCorrTotal
-      << " bCorrTotal=" << bCorrTotal
+      << " exposure_total=" << exposure_total
+      << " r_corr_total=" << r_corr_total << " g_corr_total=" << g_corr_total
+      << " b_corr_total=" << b_corr_total
       << " resolution=" << sign1 << axis1 << size1
           << sign2 << axis2 << size2
       << " width=" << width << " height=" << height << '\n';
 
-  Fliperator flip(&image, axis1[0] == 'Y', rowOrder, colOrder);
+  Fliperator flip(&image, axis1[0] == 'Y', row_order, col_order);
 
   // buffer a scanline of pixels
   std::vector<Pixel::RGBE8> scanline(size2);

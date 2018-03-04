@@ -10,45 +10,45 @@
 #include <vector>
 
 bool checkGL() {
-  bool noErrors = true;
-  while(noErrors) {
+  bool no_errors = true;
+  while(no_errors) {
     switch(glGetError()) {
       case GL_NO_ERROR:
-        return noErrors;
+        return no_errors;
       case GL_INVALID_ENUM:
         std::cout << "GL_INVALID_ENUM" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_INVALID_VALUE:
         std::cout << "GL_INVALID_VALUE" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_INVALID_OPERATION:
         std::cout << "GL_INVALID_OPERATION" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_INVALID_FRAMEBUFFER_OPERATION:
         std::cout << "GL_INVALID_FRAMEBUFFER_OPERATION" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_OUT_OF_MEMORY:
         std::cout << "GL_OUT_OF_MEMORY" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_STACK_UNDERFLOW:
         std::cout << "GL_STACK_UNDERFLOW" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       case GL_STACK_OVERFLOW:
         std::cout << "GL_STACK_OVERFLOW" << std::endl;
-        noErrors = false;
+        no_errors = false;
         break;
       default:
         std::cout << "unknown gl error" << std::endl;
-        noErrors = false;
+        no_errors = false;
     }
   }
-  return noErrors;
+  return no_errors;
 }
 
 namespace {
@@ -72,10 +72,10 @@ namespace {
   }
 }
 
-GLuint loadShader(const char *file_name, GLenum shaderType) {
-  assert(shaderType == GL_VERTEX_SHADER || shaderType == GL_FRAGMENT_SHADER);
+GLuint loadShader(const char *file_name, GLenum shader_type) {
+  assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
 
-  GLuint id = glCreateShader(shaderType);
+  GLuint id = glCreateShader(shader_type);
 
   COMPILE_ASSERT(sizeof(char) == sizeof(GLchar));
   std::vector<char> source = loadShaderFile(file_name);
@@ -87,10 +87,10 @@ GLuint loadShader(const char *file_name, GLenum shaderType) {
   GLint result = GL_FALSE;
   glGetShaderiv(id, GL_COMPILE_STATUS, &result);
   if(result == GL_FALSE) {
-    GLint logLength;
-    glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> log(logLength);
-    glGetShaderInfoLog(id, logLength, nullptr, log.data());
+    GLint log_length;
+    glGetShaderiv(id, GL_INFO_LOG_LENGTH, &log_length);
+    std::vector<char> log(log_length);
+    glGetShaderInfoLog(id, log_length, nullptr, log.data());
     std::cout << "failed compiling shader \"" << file_name << "\":\n"
       << log.data();
   }
@@ -100,99 +100,99 @@ GLuint loadShader(const char *file_name, GLenum shaderType) {
   return id;
 }
 
-GLuint linkProgram(GLuint vertShaderId, GLuint fragShaderId) {
-  GLuint programId = glCreateProgram();
-  glAttachShader(programId, vertShaderId);
-  glAttachShader(programId, fragShaderId);
-  glLinkProgram(programId);
+GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
+  GLuint program_id = glCreateProgram();
+  glAttachShader(program_id, vert_shader_id);
+  glAttachShader(program_id, frag_shader_id);
+  glLinkProgram(program_id);
 
   GLint result = GL_FALSE;
-  glGetProgramiv(programId, GL_LINK_STATUS, &result);
+  glGetProgramiv(program_id, GL_LINK_STATUS, &result);
   if(result == GL_FALSE) {
-    GLint logLength;
-    glGetProgramiv(programId, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> log(logLength);
-    glGetProgramInfoLog(programId, logLength, nullptr, log.data());
+    GLint log_length;
+    glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &log_length);
+    std::vector<char> log(log_length);
+    glGetProgramInfoLog(program_id, log_length, nullptr, log.data());
     std::cout << "failed linking program:\n" << log.data();
   }
 
   assert(checkGL());
 
-  return programId;
+  return program_id;
 }
 
 GLuint vertVBO(const Mesh &m) {
   // 3 verts per tri, 3 floats per vert
-  int floatNum = m.mTris.size() * 3 * 3;
-  GLfloat *vbo = new GLfloat[floatNum];
+  int float_num = m.tris.size() * 3 * 3;
+  GLfloat *vbo = new GLfloat[float_num];
 
   int b = 0;
-  for(auto it = m.mTris.begin(); it != m.mTris.end(); it++) {
+  for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const Vec3 &v = m.mVerts[it->vertIdxs[i]];
+      const Vec3 &v = m.verts[it->vert_idxs[i]];
       vbo[b++] = v.x;
       vbo[b++] = v.y;
       vbo[b++] = v.z;
     }
   }
 
-  GLuint vertBufferId;
-  glGenBuffers(1, &vertBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, vertBufferId);
-  glBufferData(GL_ARRAY_BUFFER, floatNum * sizeof(GLfloat), vbo,
+  GLuint vert_buffer_id;
+  glGenBuffers(1, &vert_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
     GL_STATIC_DRAW);
 
   delete[] vbo;
-  return vertBufferId;
+  return vert_buffer_id;
 }
 
 GLuint uvVBO(const Mesh &m) {
   // 3 verts per tri, 2 floats per vert
-  int floatNum = m.mTris.size() * 3 * 2;
-  GLfloat *vbo = new GLfloat[floatNum];
+  int float_num = m.tris.size() * 3 * 2;
+  GLfloat *vbo = new GLfloat[float_num];
 
   int b = 0;
-  for(auto it = m.mTris.begin(); it != m.mTris.end(); it++) {
+  for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const UVCoord &v = m.mUVs[it->uvIdxs[i]];
+      const UVCoord &v = m.uvs[it->uv_idxs[i]];
       vbo[b++] = v.u;
       vbo[b++] = v.v;
     }
   }
 
-  GLuint uvBufferId;
-  glGenBuffers(1, &uvBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
-  glBufferData(GL_ARRAY_BUFFER, floatNum * sizeof(GLfloat), vbo,
+  GLuint uv_buffer_id;
+  glGenBuffers(1, &uv_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, uv_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
     GL_STATIC_DRAW);
 
   delete[] vbo;
-  return uvBufferId;
+  return uv_buffer_id;
 }
 
 GLuint normVBO(const Mesh &m) {
   // 3 normals per tri, 3 floats per normal
-  int floatNum = m.mTris.size() * 3 * 3;
-  GLfloat *vbo = new GLfloat[floatNum];
+  int float_num = m.tris.size() * 3 * 3;
+  GLfloat *vbo = new GLfloat[float_num];
 
   int b = 0;
-  for(auto it = m.mTris.begin(); it != m.mTris.end(); it++) {
+  for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const Vec3 &n = m.mNormals[it->normalIdxs[i]];
+      const Vec3 &n = m.normals[it->normal_idxs[i]];
       vbo[b++] = n.x;
       vbo[b++] = n.y;
       vbo[b++] = n.z;
     }
   }
 
-  GLuint normBufferId;
-  glGenBuffers(1, &normBufferId);
-  glBindBuffer(GL_ARRAY_BUFFER, normBufferId);
-  glBufferData(GL_ARRAY_BUFFER, floatNum * sizeof(GLfloat), vbo,
+  GLuint norm_buffer_id;
+  glGenBuffers(1, &norm_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, norm_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
     GL_STATIC_DRAW);
 
   delete[] vbo;
-  return normBufferId;
+  return norm_buffer_id;
 }
 
 namespace {
@@ -265,27 +265,27 @@ namespace {
   }
 }
 
-GLuint pngTex(const char *pngName) {
-  std::ifstream input(pngName, std::ifstream::binary);
-  Image texImg = readPng(input);
-  Pixel::Type type = texImg.type();
+GLuint pngTex(const char *png_name) {
+  std::ifstream input(png_name, std::ifstream::binary);
+  Image tex_img = readPng(input);
+  Pixel::Type type = tex_img.type();
 
-  GLuint texId;
-  glGenTextures(1, &texId);
-  glBindTexture(GL_TEXTURE_2D, texId);
+  GLuint tex_id;
+  glGenTextures(1, &tex_id);
+  glBindTexture(GL_TEXTURE_2D, tex_id);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexImage2D(
     GL_TEXTURE_2D,             // target
     0,                         // level
     px2glInternalFormat(type), // internalFormat
-    texImg.width(),            // width
-    texImg.height(),           // height
+    tex_img.width(),            // width
+    tex_img.height(),           // height
     0,                         // border
     px2glFormat(type),         // format
     px2glType(type),           // type
-    texImg.data()              // data
+    tex_img.data()              // data
   );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  return texId;
+  return tex_id;
 }

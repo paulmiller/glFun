@@ -12,19 +12,19 @@ public:
 
   void onFramebufferSize(int width, int height) override;
   void onMouseButton(int button, int action, int mods) override;
-  void onCursorPosition(double xpos, double ypos) override;
+  void onCursorPosition(double x, double y) override;
 
 private:
-  Camera cam;
+  Camera cam_;
 
-  double rotation;
-  double declination;
-  double distance;
+  double rotation_;
+  double declination_;
+  double distance_;
 
-  bool dragging;
-  double drag_scale;
-  double drag_start_x, drag_start_y;
-  double drag_end_x, drag_end_y;
+  bool dragging_;
+  double drag_scale_;
+  double drag_start_x_, drag_start_y_;
+  double drag_end_x_, drag_end_y_;
 
   double draggedRotation();
   double draggedDeclination();

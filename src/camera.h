@@ -5,13 +5,13 @@
 
 class Camera {
 private:
-  int mFrameWidthPx, mFrameHeightPx;
-  Mat4 mView, mInvView, mProj, mInvProj;
+  int frame_width_px_, frame_height_px_;
+  Mat4 view_, view_inverse_, proj_, proj_inverse_;
 
 public:
   Camera();
-  void setResolution(int widthPx, int heightPx);
-  void setFrustum(float nearClip, float farClip, float horizFOV, float aspect);
+  void setResolution(int width_px, int height_px);
+  void setFrustum(float near_clip, float far_clip, float horiz_fov, float aspect);
   void look(const Vec3 &eye, const Vec3 &forward, const Vec3 &up);
   void lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up);
   // Get the matrix which transforms points from world-space into
@@ -22,7 +22,7 @@ public:
   Mat4 getInvTransform() const;
   // Cast a ray from a screen pixel, producing points on the near and far
   // clipping planes
-  void castPixel(int xPx, int yPx, Vec3 &near, Vec3 &far) const;
+  void castPixel(int x_px, int y_px, Vec3 &near, Vec3 &far) const;
 };
 
 #endif
