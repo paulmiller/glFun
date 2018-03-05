@@ -124,7 +124,7 @@ GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
 GLuint vertVBO(const Mesh &m) {
   // 3 verts per tri, 3 floats per vert
   int float_num = m.tris.size() * 3 * 3;
-  GLfloat *vbo = new GLfloat[float_num];
+  std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
 
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
@@ -139,17 +139,16 @@ GLuint vertVBO(const Mesh &m) {
   GLuint vert_buffer_id;
   glGenBuffers(1, &vert_buffer_id);
   glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
-  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo.get(),
     GL_STATIC_DRAW);
 
-  delete[] vbo;
   return vert_buffer_id;
 }
 
 GLuint uvVBO(const Mesh &m) {
   // 3 verts per tri, 2 floats per vert
   int float_num = m.tris.size() * 3 * 2;
-  GLfloat *vbo = new GLfloat[float_num];
+  std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
 
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
@@ -163,17 +162,16 @@ GLuint uvVBO(const Mesh &m) {
   GLuint uv_buffer_id;
   glGenBuffers(1, &uv_buffer_id);
   glBindBuffer(GL_ARRAY_BUFFER, uv_buffer_id);
-  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo.get(),
     GL_STATIC_DRAW);
 
-  delete[] vbo;
   return uv_buffer_id;
 }
 
 GLuint normVBO(const Mesh &m) {
   // 3 normals per tri, 3 floats per normal
   int float_num = m.tris.size() * 3 * 3;
-  GLfloat *vbo = new GLfloat[float_num];
+  std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
 
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
@@ -188,10 +186,9 @@ GLuint normVBO(const Mesh &m) {
   GLuint norm_buffer_id;
   glGenBuffers(1, &norm_buffer_id);
   glBindBuffer(GL_ARRAY_BUFFER, norm_buffer_id);
-  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo,
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo.get(),
     GL_STATIC_DRAW);
 
-  delete[] vbo;
   return norm_buffer_id;
 }
 
