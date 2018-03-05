@@ -155,51 +155,42 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8 & p) {
 }
 
 Image::Image() :
-  data_(nullptr), type_(Pixel::NONE_T), width_(0), height_(0) {}
+  type_(Pixel::NONE_T), width_(0), height_(0) {}
 
-Image::Image(int width, int height, Pixel::Type type) : data_(nullptr) {
+Image::Image(int width, int height, Pixel::Type type) {
   init(width, height, type);
 }
 
 Image::Image(Image&& src) :
-  data_(src.data_), type_(src.type_), width_(src.width_), height_(src.height_)
+  data_(std::move(src.data_)),
+  type_(src.type_), width_(src.width_), height_(src.height_)
 {
-  src.data_ = nullptr;
-}
-
-Image::~Image() {
-  delete[] data_;
+  src.clear();
 }
 
 Image& Image::operator=(Image&& src) {
-  delete[] data_;
-
-  data_ = src.data_;
+  data_ = std::move(src.data_);
   type_ = src.type_;
   width_ = src.width_;
   height_ = src.height_;
 
-  src.data_ = nullptr;
-  src.type_ = Pixel::NONE_T;
-  src.width_ = 0;
-  src.height_ = 0;
+  src.clear();
 
   return *this;
 }
 
 void Image::init(int width, int height, Pixel::Type type) {
-  assert(data_ == nullptr);
+  assert(!data_);
   width_ = width;
   height_ = height;
   type_ = type;
   std::size_t size = width * height * Pixel::size(type);
-  data_ = new char[size];
-  memset(data_, 0, size);
+  data_.reset(new char[size]);
+  memset(data_.get(), 0, size);
 }
 
 void Image::clear() {
-  delete[] data_;
-  data_ = nullptr;
+  data_.reset();
   type_ = Pixel::NONE_T;
   width_ = 0;
   height_ = 0;
@@ -218,19 +209,19 @@ Pixel::Type Image::type() const {
 }
 
 void *Image::data() {
-  return data_;
+  return data_.get();
 }
 
 void *Image::getRowPtr(int row) {
-  return data_ + (width_ * row) * Pixel::size(type_);
+  return data_.get() + (width_ * row) * Pixel::size(type_);
 }
 
 void *Image::getPixelPtr(int row, int col) {
-  return data_ + (width_ * row + col) * Pixel::size(type_);
+  return data_.get() + (width_ * row + col) * Pixel::size(type_);
 }
 
 const void *Image::getPixelPtr(int row, int col) const {
-  return data_ + (width_ * row + col) * Pixel::size(type_);
+  return data_.get() + (width_ * row + col) * Pixel::size(type_);
 }
 
 Fliperator::Fliperator(

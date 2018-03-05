@@ -2,6 +2,7 @@
 #define IMAGE_H
 
 #include <cstdint>
+#include <memory>
 #include <ostream>
 
 namespace Pixel {
@@ -61,7 +62,7 @@ std::ostream& operator<<(std::ostream & o, const Pixel::RGBE8  & p);
 // "down", lower columns are "left", and higher columns are "right".
 class Image {
 private:
-  char *data_;
+  std::unique_ptr<char[]> data_;
   Pixel::Type type_;
   int width_;
   int height_;
@@ -70,7 +71,6 @@ public:
   Image(); // Create uninitialized image
   Image(int width, int height, Pixel::Type type); // Create initialized image
   Image(Image&& src);
-  ~Image();
   Image& operator=(Image&& src);
   void init(int width, int height, Pixel::Type type);
   void clear();

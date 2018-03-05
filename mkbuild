@@ -22,6 +22,7 @@ main_srcs = [
 
 test_srcs = [
   'catch_main',
+  'image_test',
   'math3d_test'
 ]
 
