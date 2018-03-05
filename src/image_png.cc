@@ -8,6 +8,7 @@
 #include <csetjmp>
 #include <functional>
 #include <iostream>
+#include <memory>
 
 namespace {
   const int PNG_SIG_SIZE = 8;
@@ -175,12 +176,12 @@ Image readPng(std::istream &input) {
 
   Image img(width, height, type);
 
-  png_bytepp rows = new png_bytep[height];
+  std::unique_ptr<png_bytep[]> rows(new png_bytep[height]);
   for(int i = 0; i < (int)height; i++) {
     rows[i] = reinterpret_cast<png_bytep>(img.getRowPtr(i));
   }
-  png_read_image(reader.s, rows);
-  delete[] rows;
+  png_read_image(reader.s, rows.get());
+  rows.reset();
 
   png_read_end(reader.s, nullptr);
 
@@ -261,11 +262,11 @@ void writePng(std::ostream &output, Image &img) {
   if(bit_depth == 16 && shouldSwapEndian())
     transform = PNG_TRANSFORM_SWAP_ENDIAN;
 
-  png_bytepp rows = new png_bytep[height];
+  std::unique_ptr<png_bytep[]> rows(new png_bytep[height]);
   for(int i = 0; i < (int)height; i++) {
     rows[i] = reinterpret_cast<png_bytep>(img.getRowPtr(i));
   }
-  png_set_rows(writer.s, writer.i, rows);
+  png_set_rows(writer.s, writer.i, rows.get());
   png_write_png(writer.s, writer.i, transform, nullptr);
-  delete[] rows;
+  rows.reset();
 }
