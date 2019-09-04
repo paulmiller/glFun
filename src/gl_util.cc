@@ -121,7 +121,7 @@ GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
   return program_id;
 }
 
-GLuint vertVBO(const Mesh &m) {
+GLuint vertVBO(const TriMesh &m) {
   // 3 verts per tri, 3 floats per vert
   int float_num = m.tris.size() * 3 * 3;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
@@ -145,7 +145,7 @@ GLuint vertVBO(const Mesh &m) {
   return vert_buffer_id;
 }
 
-GLuint uvVBO(const Mesh &m) {
+GLuint uvVBO(const TriMesh &m) {
   // 3 verts per tri, 2 floats per vert
   int float_num = m.tris.size() * 3 * 2;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
@@ -168,7 +168,7 @@ GLuint uvVBO(const Mesh &m) {
   return uv_buffer_id;
 }
 
-GLuint normVBO(const Mesh &m) {
+GLuint normVBO(const TriMesh &m) {
   // 3 normals per tri, 3 floats per normal
   int float_num = m.tris.size() * 3 * 3;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);

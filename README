@@ -1,3 +1,10 @@
-Requires GL, GLEW, GLFW, and libpng.
-
 Run mkbuild to create build.ninja, then build with ninja.
+
+Required libs:
+- GL
+- GLEW
+- GLFW
+- libpng
+Requried build tools:
+- ninja
+- re2c

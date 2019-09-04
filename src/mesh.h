@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+// a texture coordinate
 class UVCoord {
 public:
   float u, v;
@@ -14,6 +15,7 @@ public:
   UVCoord(float u, float v);
 };
 
+// a triangle
 class Tri {
 public:
   int vert_idxs[3];
@@ -26,23 +28,21 @@ public:
     int n1, int n2, int n3,
     int t1, int t2, int t3
   );
+  Tri(int (&v)[3], int (&n)[3], int (&t)[3]);
 };
 
-class Mesh {
+// a mesh of triangles
+class TriMesh {
 public:
-  std::string name;
   std::vector<Vec3> verts;
   std::vector<Vec3> normals;
   std::vector<UVCoord> uvs;
   std::vector<Tri> tris;
 
 public:
-  Mesh(const char* name);
   // Check for intersection with a line segment
   // TODO currently a ray
   bool intersects(const Vec3 &start, const Vec3 &end) const;
-  // Parse Wavefront OBJ format
-  static std::vector<Mesh> parseObj(std::istream &input);
 };
 
 #endif

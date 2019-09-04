@@ -14,9 +14,9 @@ GLuint loadShader(const char *source_name, GLenum shader_type);
 GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id);
 
 // make vertex buffer objects from a mesh
-GLuint vertVBO(const Mesh &m);
-GLuint uvVBO(const Mesh &m);
-GLuint normVBO(const Mesh &m);
+GLuint vertVBO(const TriMesh &m);
+GLuint uvVBO(const TriMesh &m);
+GLuint normVBO(const TriMesh &m);
 
 // turn a png file into a GL texture
 GLuint pngTex(const char *png_name);

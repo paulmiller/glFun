@@ -5,6 +5,7 @@
 #include "image_hdr.h"
 #include "image_png.h"
 #include "mesh.h"
+#include "mesh_obj.h"
 #include "object.h"
 #include "ohno.h"
 #include "util.h"
@@ -12,6 +13,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 int submain();
@@ -155,11 +157,15 @@ int submain() {
   glBindVertexArray(array_id);
 
   //std::ifstream widget_input("res/suzanne.obj", std::ifstream::in);
-  std::ifstream widget_input("res/axes.obj", std::ifstream::in);
-  std::vector<Mesh> widgets = Mesh::parseObj(widget_input);
-  GLuint vert_buffer_id = vertVBO(widgets[0]);
-  GLuint uv_buffer_id = uvVBO(widgets[0]);
-  GLuint norm_buffer_id = normVBO(widgets[0]);
+  std::ifstream axes_input("res/axes.obj", std::ifstream::in);
+  std::stringstream axes_text;
+  axes_text << axes_input.rdbuf();
+  WavFrObj parser;
+  parser.parseFrom(axes_text.str());
+  TriMesh axes_mesh = parser.getTriMesh("axes_default");
+  GLuint vert_buffer_id = vertVBO(axes_mesh);
+  GLuint uv_buffer_id = uvVBO(axes_mesh);
+  GLuint norm_buffer_id = normVBO(axes_mesh);
 
   assert(checkGL());
 
@@ -280,7 +286,7 @@ int submain() {
 
     assert(checkGL());
 
-    glDrawArrays(GL_TRIANGLES, 0, widgets[0].tris.size() * 3);
+    glDrawArrays(GL_TRIANGLES, 0, axes_mesh.tris.size() * 3);
 
     assert(checkGL());
 
