@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-UVCoord::UVCoord(float u, float v) : u(u), v(v) {}
+UvCoord::UvCoord(float u, float v) : u(u), v(v) {}
 
 Tri::Tri(int v1, int v2, int v3) :
   vert_idxs{v1, v2, v3},

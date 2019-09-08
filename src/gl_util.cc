@@ -51,36 +51,15 @@ bool checkGL() {
   return no_errors;
 }
 
-namespace {
-  // load a text file and append a null-terminator
-  std::vector<char> loadShaderFile(const char *file_name) {
-    std::ifstream in(file_name);
-    if(in.bad())
-      throw OHNO("couldn't open file");
-
-    in.seekg(0, in.end);
-    size_t size = in.tellg();
-    in.seekg(0, in.beg);
-
-    std::vector<char> buffer(size + 1); // init to 0. +1 for null.
-
-    in.read(buffer.data(), size);
-    if(in.bad())
-      throw OHNO("couldn't read file");
-
-    return buffer;
-  }
-}
-
 GLuint loadShader(const char *file_name, GLenum shader_type) {
-  assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
+  COMPILE_ASSERT(sizeof(char) == sizeof(GLchar));
 
+  assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
   GLuint id = glCreateShader(shader_type);
 
-  COMPILE_ASSERT(sizeof(char) == sizeof(GLchar));
-  std::vector<char> source = loadShaderFile(file_name);
-  const char * const data_ptr = source.data();
-  glShaderSource(id, 1, &data_ptr, nullptr);
+  std::string str = readWholeFileOrThrow(file_name);
+  const char * const str_ptr = str.c_str();
+  glShaderSource(id, 1, &str_ptr, nullptr);
 
   glCompileShader(id);
 
@@ -153,7 +132,7 @@ GLuint uvVBO(const TriMesh &m) {
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const UVCoord &v = m.uvs[it->uv_idxs[i]];
+      const UvCoord &v = m.uvs[it->uv_idxs[i]];
       vbo[b++] = v.u;
       vbo[b++] = v.v;
     }

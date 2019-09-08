@@ -9,6 +9,7 @@
 #include "object.h"
 #include "ohno.h"
 #include "util.h"
+#include "vox_vol.h"
 
 #include <cassert>
 #include <fstream>
@@ -147,7 +148,6 @@ int submain() {
   GLenum glew_error = glGetError();
   assert(glew_error == GL_NO_ERROR || glew_error == GL_INVALID_ENUM);
 
-  //GLuint color = pngTex("res/suzanne-color.png");
   GLuint color = pngTex("res/axes.png");
 
   assert(checkGL());
@@ -156,29 +156,73 @@ int submain() {
   glGenVertexArrays(1, &array_id);
   glBindVertexArray(array_id);
 
-  //std::ifstream widget_input("res/suzanne.obj", std::ifstream::in);
-  std::ifstream axes_input("res/axes.obj", std::ifstream::in);
-  std::stringstream axes_text;
-  axes_text << axes_input.rdbuf();
+  std::string axes_str = readWholeFileOrThrow("res/axes.obj");
   WavFrObj parser;
-  parser.parseFrom(axes_text.str());
+  parser.parseFrom(axes_str);
   TriMesh axes_mesh = parser.getTriMesh("axes_default");
-  GLuint vert_buffer_id = vertVBO(axes_mesh);
-  GLuint uv_buffer_id = uvVBO(axes_mesh);
-  GLuint norm_buffer_id = normVBO(axes_mesh);
+  GLuint axes_vert_buffer_id = vertVBO(axes_mesh);
+  GLuint axes_uv_buffer_id = uvVBO(axes_mesh);
+  GLuint axes_norm_buffer_id = normVBO(axes_mesh);
 
   assert(checkGL());
 
-  GLuint vert_shader_id = loadShader("src/vert.glsl", GL_VERTEX_SHADER);
-  GLuint frag_shader_id = loadShader("src/frag.glsl", GL_FRAGMENT_SHADER);
-  GLuint program_id = linkProgram(vert_shader_id, frag_shader_id);
-  glDeleteShader(vert_shader_id);
-  glDeleteShader(frag_shader_id);
+  int vox_vol_size = 200;
+  BoolVoxVol vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
+  for(int z = 0; z < vox_vol_size; z++) {
+    for(int y = 0; y < vox_vol_size; y++) {
+      for(int x = 0; x < vox_vol_size; x++) {
+        if(vox_vol.centerOf(x, y, z).len() < 1.0f) {
+          vox_vol.at(x, y, z) = true;
+        }
+      }
+    }
+  }
+  TriMesh vox_vol_mesh = vox_vol.createBlockMesh();
+  {
+    size_t verts_size = vox_vol_mesh.verts.size();
+    size_t tris_size = vox_vol_mesh.tris.size();
+    std::cout << "vox mesh: "
+      << verts_size << " verts, "
+      << (verts_size * sizeof(Vec3) / 1024) << " KB, "
+      << tris_size << " tris, "
+      << (tris_size * sizeof(Tri) / 1024) << " KB\n";
+  }
+
+  GLuint vox_vol_vert_buffer_id = vertVBO(vox_vol_mesh);
+  GLuint vox_vol_norm_buffer_id = normVBO(vox_vol_mesh);
 
   assert(checkGL());
 
-  GLuint matrix_id = glGetUniformLocation(program_id, "MVP");
-  GLuint sampler_id = glGetUniformLocation(program_id, "myTextureSampler");
+  GLuint norm_vert_shader_id =
+    loadShader("src/norm_vert.glsl", GL_VERTEX_SHADER);
+  GLuint norm_frag_shader_id =
+    loadShader("src/norm_frag.glsl", GL_FRAGMENT_SHADER);
+  GLuint norm_program_id =
+    linkProgram(norm_vert_shader_id, norm_frag_shader_id);
+  glDeleteShader(norm_vert_shader_id);
+  glDeleteShader(norm_frag_shader_id);
+
+  assert(checkGL());
+
+  GLuint norm_program_mvp_id = glGetUniformLocation(norm_program_id, "mvp");
+
+  assert(checkGL());
+
+  GLuint norm_tex_vert_shader_id =
+    loadShader("src/norm_tex_vert.glsl", GL_VERTEX_SHADER);
+  GLuint norm_tex_frag_shader_id =
+    loadShader("src/norm_tex_frag.glsl", GL_FRAGMENT_SHADER);
+  GLuint norm_tex_program_id =
+    linkProgram(norm_tex_vert_shader_id, norm_tex_frag_shader_id);
+  glDeleteShader(norm_tex_vert_shader_id);
+  glDeleteShader(norm_tex_frag_shader_id);
+
+  assert(checkGL());
+
+  GLuint norm_tex_program_mvp_id =
+    glGetUniformLocation(norm_tex_program_id, "mvp");
+  GLuint norm_tex_program_sampler_id =
+    glGetUniformLocation(norm_program_id, "sampler");
 
   assert(checkGL());
 
@@ -234,21 +278,23 @@ int submain() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(program_id);
+    // draw axes
 
-    glUniformMatrix4fv(matrix_id, 1, GL_FALSE,
+    glUseProgram(norm_tex_program_id);
+
+    glUniformMatrix4fv(norm_tex_program_mvp_id, 1, GL_FALSE,
       camera_control.getCam()->getTransform().data());
 
     assert(checkGL());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, color);
-    glUniform1i(sampler_id, 0);
+    glUniform1i(norm_tex_program_sampler_id, 0);
 
     assert(checkGL());
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, axes_vert_buffer_id);
     glVertexAttribPointer(
       0,        // index (attribute)
       3,        // size
@@ -261,10 +307,10 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, uv_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, axes_norm_buffer_id);
     glVertexAttribPointer(
       1,        // index (attribute)
-      2,        // size
+      3,        // size
       GL_FLOAT, // type
       GL_FALSE, // normalized
       0,        // stride
@@ -274,10 +320,10 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, norm_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, axes_uv_buffer_id);
     glVertexAttribPointer(
       2,        // index (attribute)
-      3,        // size
+      2,        // size
       GL_FLOAT, // type
       GL_FALSE, // normalized
       0,        // stride
@@ -296,17 +342,69 @@ int submain() {
 
     assert(checkGL());
 
+    // draw vox_vol
+
+    glUseProgram(norm_program_id);
+
+    glUniformMatrix4fv(norm_program_mvp_id, 1, GL_FALSE,
+      camera_control.getCam()->getTransform().data());
+
+    assert(checkGL());
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vox_vol_vert_buffer_id);
+    glVertexAttribPointer(
+      0,        // index (attribute)
+      3,        // size
+      GL_FLOAT, // type
+      GL_FALSE, // normalized
+      0,        // stride
+      (void*)0  // pointer (buffer offset)
+    );
+
+    assert(checkGL());
+
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, vox_vol_norm_buffer_id);
+    glVertexAttribPointer(
+      1,        // index (attribute)
+      3,        // size
+      GL_FLOAT, // type
+      GL_FALSE, // normalized
+      0,        // stride
+      (void*)0  // pointer (buffer offset)
+    );
+
+    assert(checkGL());
+
+    glDrawArrays(GL_TRIANGLES, 0, vox_vol_mesh.tris.size() * 3);
+
+    assert(checkGL());
+
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(0);
+
+    assert(checkGL());
+
+    // done drawing
+
     glfwSwapBuffers(window);
     glfwPollEvents();
     assert(checkGL());
     frame++;
   }
 
-  glDeleteProgram(program_id);
-  glDeleteBuffers(1, &uv_buffer_id);
-  glDeleteBuffers(1, &vert_buffer_id);
-  glDeleteVertexArrays(1, &array_id);
+  glDeleteProgram(norm_program_id);
+  glDeleteBuffers(1, &vox_vol_vert_buffer_id);
+  glDeleteBuffers(1, &vox_vol_norm_buffer_id);
+
+  glDeleteProgram(norm_tex_program_id);
+  glDeleteBuffers(1, &axes_vert_buffer_id);
+  glDeleteBuffers(1, &axes_uv_buffer_id);
+  glDeleteBuffers(1, &axes_norm_buffer_id);
   glDeleteTextures(1, &color);
+
+  glDeleteVertexArrays(1, &array_id);
 
   assert(checkGL());
 

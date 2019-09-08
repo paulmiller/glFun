@@ -13,7 +13,8 @@ common_srcs = [
   'mesh',
   'object',
   'ohno',
-  'util'
+  'util',
+  'vox_vol',
 ]
 
 main_srcs = [

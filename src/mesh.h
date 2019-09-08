@@ -8,11 +8,11 @@
 #include <vector>
 
 // a texture coordinate
-class UVCoord {
+class UvCoord {
 public:
   float u, v;
 
-  UVCoord(float u, float v);
+  UvCoord(float u, float v);
 };
 
 // a triangle
@@ -36,7 +36,7 @@ class TriMesh {
 public:
   std::vector<Vec3> verts;
   std::vector<Vec3> normals;
-  std::vector<UVCoord> uvs;
+  std::vector<UvCoord> uvs;
   std::vector<Tri> tris;
 
 public:

@@ -1,7 +1,12 @@
 #include "util.h"
 
+#include "ohno.h"
+
 #include <cassert>
 #include <cmath>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 float invSqrt(float x) {
   return 1 / sqrt(x);
@@ -30,4 +35,15 @@ bool hasPrefix(const char *prefix, const char *str) {
     }
   }
   return true;
+}
+
+std::string readWholeFileOrThrow(const char *file_name) {
+  std::ifstream file_stream(file_name, std::ifstream::in);
+  std::stringstream str_stream;
+  str_stream << file_stream.rdbuf();
+  if(file_stream.fail() || str_stream.fail()) {
+    std::cout << "failed reading file \"" << file_name << "\"\n";
+    throw OHNO("");
+  }
+  return str_stream.str();
 }

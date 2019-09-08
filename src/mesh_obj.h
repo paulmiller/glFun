@@ -54,7 +54,7 @@ private:
   void sanitize();
 
   std::vector<Vec3> verts_; // vertex positions
-  std::vector<UVCoord> uvs_; // texture coordinates (with V component flipped)
+  std::vector<UvCoord> uvs_; // texture coordinates (with V component flipped)
   std::vector<Vec3> normals_; // normal vectors
   std::vector<ObjObject> objects_;
 };
