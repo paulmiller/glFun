@@ -6,23 +6,10 @@
 #include <cassert>
 
 /*****************************************************************************
- * Mat4                                                                      *
+ * Mat3                                                                      *
  *****************************************************************************/
 
-const Mat4 Mat4::ZERO(
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0
-);
-
-const Mat4 Mat4::IDENTITY(
-  1, 0, 0, 0,
-  0, 1, 0, 0,
-  0, 0, 1, 0,
-  0, 0, 0, 1
-);
-
+/*
 Mat4 Mat4::translation(const Vec3 &v) {
   return Mat4(
     1, 0, 0, v.x,
@@ -90,154 +77,7 @@ Mat4 Mat4::scale(const Vec3 &v) {
       0,   0,   0, 1
   );
 }
-
-Mat4::Mat4() : Mat4(ZERO) {} // TODO initialization order bugs?
-
-Mat4::Mat4(
-  float r0c0, float r0c1, float r0c2, float r0c3,
-  float r1c0, float r1c1, float r1c2, float r1c3,
-  float r2c0, float r2c1, float r2c2, float r2c3,
-  float r3c0, float r3c1, float r3c2, float r3c3
-) : data_{
-  r0c0, r1c0, r2c0, r3c0,
-  r0c1, r1c1, r2c1, r3c1,
-  r0c2, r1c2, r2c2, r3c2,
-  r0c3, r1c3, r2c3, r3c3
-} {}
-
-Mat4::Mat4(const Mat4& a) : data_{
-  a.data_[ 0], a.data_[ 1], a.data_[ 2], a.data_[ 3],
-  a.data_[ 4], a.data_[ 5], a.data_[ 6], a.data_[ 7],
-  a.data_[ 8], a.data_[ 9], a.data_[10], a.data_[11],
-  a.data_[12], a.data_[13], a.data_[14], a.data_[15]
-} {}
-
-const float* Mat4::data() const {
-  return data_;
-}
-
-float* Mat4::data() {
-  return data_;
-}
-
-float Mat4::operator()(int row, int col) const {
-  assert(0 <= row && row <= 3);
-  assert(0 <= col && col <= 3);
-  return data_[4 * col + row];
-}
-
-float& Mat4::operator()(int row, int col) {
-  assert(0 <= row && row <= 3);
-  assert(0 <= col && col <= 3);
-  return data_[4 * col + row];
-}
-
-Mat4& Mat4::operator=(const Mat4& a) {
-  for(int i = 0; i < 16; i++) {
-    data_[i] = a.data_[i];
-  }
-  return *this;
-}
-
-Mat4 Mat4::transpose() const {
-  const Mat4 &a = *this;
-  return Mat4(
-    a(0,0), a(1,0), a(2,0), a(3,0),
-    a(0,1), a(1,1), a(2,1), a(3,1),
-    a(0,2), a(1,2), a(2,2), a(3,2),
-    a(0,3), a(1,3), a(2,3), a(3,3)
-  );
-}
-
-Mat4 operator-(const Mat4 &a) {
-  return Mat4(
-    -a(0,0), -a(0,1), -a(0,2), -a(0,3),
-    -a(1,0), -a(1,1), -a(1,2), -a(1,3),
-    -a(2,0), -a(2,1), -a(2,2), -a(2,3),
-    -a(3,0), -a(3,1), -a(3,2), -a(3,3)
-  );
-}
-
-Mat4 operator+(const Mat4 &a, const Mat4 &b) {
-  return Mat4(
-    a(0,0) + b(0,0), a(0,1) + b(0,1), a(0,2) + b(0,2), a(0,3) + b(0,3),
-    a(1,0) + b(1,0), a(1,1) + b(1,1), a(1,2) + b(1,2), a(1,3) + b(1,3),
-    a(2,0) + b(2,0), a(2,1) + b(2,1), a(2,2) + b(2,2), a(2,3) + b(2,3),
-    a(3,0) + b(3,0), a(3,1) + b(3,1), a(3,2) + b(3,2), a(3,3) + b(3,3)
-  );
-}
-
-Mat4 operator-(const Mat4 &a, const Mat4 &b) {
-  return Mat4(
-    a(0,0) - b(0,0), a(0,1) - b(0,1), a(0,2) - b(0,2), a(0,3) - b(0,3),
-    a(1,0) - b(1,0), a(1,1) - b(1,1), a(1,2) - b(1,2), a(1,3) - b(1,3),
-    a(2,0) - b(2,0), a(2,1) - b(2,1), a(2,2) - b(2,2), a(2,3) - b(2,3),
-    a(3,0) - b(3,0), a(3,1) - b(3,1), a(3,2) - b(3,2), a(3,3) - b(3,3)
-  );
-}
-
-Mat4 operator*(float s, const Mat4 &a) {
-  return Mat4(
-    s * a(0,0), s * a(0,1), s * a(0,2), s * a(0,3),
-    s * a(1,0), s * a(1,1), s * a(1,2), s * a(1,3),
-    s * a(2,0), s * a(2,1), s * a(2,2), s * a(2,3),
-    s * a(3,0), s * a(3,1), s * a(3,2), s * a(3,3)
-  );
-}
-
-Mat4 operator*(const Mat4 &a, float s) {
-  return Mat4(
-    a(0,0) * s, a(0,1) * s, a(0,2) * s, a(0,3) * s,
-    a(1,0) * s, a(1,1) * s, a(1,2) * s, a(1,3) * s,
-    a(2,0) * s, a(2,1) * s, a(2,2) * s, a(2,3) * s,
-    a(3,0) * s, a(3,1) * s, a(3,2) * s, a(3,3) * s
-  );
-}
-
-Mat4 operator*(const Mat4 &a, const Mat4 &b) {
-  Mat4 p;
-  for(int r = 0; r < 4; r++) {
-    for(int c = 0; c < 4; c++) {
-      p(r,c) = a(r,0) * b(0,c) + 
-               a(r,1) * b(1,c) +
-               a(r,2) * b(2,c) +
-               a(r,3) * b(3,c);
-    }
-  }
-  return p;
-}
-
-Mat4 operator/(const Mat4 &a, float d) {
-  return Mat4(
-    a(0,0) / d, a(0,1) / d, a(0,2) / d, a(0,3) / d,
-    a(1,0) / d, a(1,1) / d, a(1,2) / d, a(1,3) / d,
-    a(2,0) / d, a(2,1) / d, a(2,2) / d, a(2,3) / d,
-    a(3,0) / d, a(3,1) / d, a(3,2) / d, a(3,3) / d
-  );
-}
-
-bool operator==(const Mat4 &a, const Mat4 &b) {
-  for(int r = 0; r < 4; r++) {
-    for(int c = 0; c < 4; c++) {
-      if(a(r,c) != b(r,c)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-bool operator!=(const Mat4 &a, const Mat4 &b) {
-  return !(a == b);
-}
-
-std::ostream& operator<<(std::ostream& out, const Mat4& m) {
-  out << "[ " <<m(0,0)<<' '<<m(0,1)<<' '<<m(0,2)<<' '<<m(0,3) << " ]\n"
-      << "[ " <<m(1,0)<<' '<<m(1,1)<<' '<<m(1,2)<<' '<<m(1,3) << " ]\n"
-      << "[ " <<m(2,0)<<' '<<m(2,1)<<' '<<m(2,2)<<' '<<m(2,3) << " ]\n"
-      << "[ " <<m(3,0)<<' '<<m(3,1)<<' '<<m(3,2)<<' '<<m(3,3) << " ]\n";
-  return out;
-}
+*/
 
 /*****************************************************************************
  * Vec2                                                                      *
@@ -616,15 +456,6 @@ float det(const Vec3 &A, const Vec3 &B, const Vec3 &C) {
 
 Ray::Ray(const Vec3 &origin_, const Vec3 &direction_) :
   origin(origin_), direction(direction_) {}
-
-Vec4 operator*(const Mat4 &m, const Vec4 &v) {
-  return Vec4(
-    m(0,0) * v.x + m(0,1) * v.y + m(0,2) * v.z + m(0,3) * v.w,
-    m(1,0) * v.x + m(1,1) * v.y + m(1,2) * v.z + m(1,3) * v.w,
-    m(2,0) * v.x + m(2,1) * v.y + m(2,2) * v.z + m(2,3) * v.w,
-    m(3,0) * v.x + m(3,1) * v.y + m(3,2) * v.z + m(3,3) * v.w
-  );
-}
 
 Ray operator*(const Mat4 &m, const Ray &r) {
   Vec4 o = m * Vec4(r.origin, 1);

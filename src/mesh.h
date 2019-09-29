@@ -41,7 +41,6 @@ public:
 
 public:
   // Check for intersection with a line segment
-  // TODO currently a ray
   bool intersects(const Vec3 &start, const Vec3 &end) const;
 };
 

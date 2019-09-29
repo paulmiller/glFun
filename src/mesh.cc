@@ -35,31 +35,49 @@ namespace {
     const Vec3 &E, const Vec3 &D,
     const Vec3 &A, const Vec3 &B, const Vec3 &C
   ) {
-    /* Solve:
-    E + tD = A + b(B-A) + c(C-A)
+    /*
+    The line segment is given by:
 
-    tD - b(B-A) - c(C-A) = A-E
-    tD + b(A-B) + c(A-C) = A-E
+    E + t(D-E)
+    t ∈ [0,1]
 
-    [           ]   [ t ]   [     ]
-    [ D A-B A-C ] x [ b ] = [ A-E ]
-    [           ]   [ c ]   [     ] */
+    The triangle is given by:
 
-    Vec3 BA = A - B;
-    Vec3 CA = A - C;
-    Vec3 EA = A - E;
+    A + b(B-A) + c(C-A)
+    b & c ∈ [0,1]
+    b + c <= 1
 
-    float d = det(D, BA, CA);
+    Set the triangle equal to the line and solve for b, c, & t:
 
-    if(d == 0)
-      return false;
+    A + b(B-A) + c(C-A)          = E + t(D-E)
+        b(B-A) + c(C-A) - t(D-E) = E          - A
 
-    float t = det(EA, BA, CA) / d;
-    float b = det( D, EA, CA) / d;
-    float c = det( D, BA, EA) / d;
+    Rewritten with matrices:
 
-    return (0 <= t && t <= 1) && (0 <= b && b <= 1) && (0 <= c && c <= 1) &&
-      (b + c <= 1);
+    [               ]   [ b ]   [     ]
+    [ B-A  C-A  D-E ] x [ c ] = [ E-A ]
+    [               ]   [ t ]   [     ]
+
+    [ b ]   [               ]-1   [     ]
+    [ c ] = [ B-A  C-A  D-E ]   x [ E-A ]
+    [ t ]   [               ]     [     ]
+    */
+
+    Mat3 mat(B-A, C-A, D-E);
+
+    float det = mat.determinate();
+    if(det == 0) return false;
+
+    Mat3 inv = mat.transpose() / det;
+    Vec3 bct = inv * Vec3(E-A);
+    float b = bct.x;
+    float c = bct.y;
+    float t = bct.t;
+    return
+      0 <= b && b <= 1 &&
+      0 <= c && c <= 1 &&
+      0 <= t && t <= 1 &&
+      b + c <= 1;
   }
 
   /*

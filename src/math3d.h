@@ -2,9 +2,11 @@
 #define MATH3D_H
 
 #include <ostream>
+#include <string>
 
 // all angles in radians
 
+class Mat3;
 class Mat4;
 class Vec2;
 class Vec3;
@@ -12,55 +14,7 @@ class Vec4;
 class Quat;
 class Ray;
 
-/*****************************************************************************
- * Mat4                                                                      *
- *****************************************************************************/
-
-class Mat4 {
-private:
-  float data_[16]; // Column-major
-
-public:
-  static const Mat4 ZERO;
-  static const Mat4 IDENTITY;
-
-  static Mat4 translation(const Vec3 &v);
-  static Mat4 rotation(const Vec3 &axis, float angle);
-  static Mat4 rotation(const Quat &q);
-  static Mat4 scale(const Vec3 &v);
-
-  Mat4();
-  Mat4(
-    float r0c0, float r0c1, float r0c2, float r0c3,
-    float r1c0, float r1c1, float r1c2, float r1c3,
-    float r2c0, float r2c1, float r2c2, float r2c3,
-    float r3c0, float r3c1, float r3c2, float r3c3
-  );
-  Mat4(const Mat4 &a);
-
-  const float* data() const;
-  float* data();
-  float operator()(int row, int col) const;
-  float& operator()(int row, int col);
-  Mat4& operator=(const Mat4& a);
-  Mat4 transpose() const;
-};
-
-Mat4 operator-(const Mat4 &a);
-Mat4 operator+(const Mat4 &a, const Mat4 &b);
-Mat4 operator-(const Mat4 &a, const Mat4 &b);
-Mat4 operator*(float s, const Mat4 &a);
-Mat4 operator*(const Mat4 &a, float s);
-Mat4 operator*(const Mat4 &a, const Mat4 &b);
-Mat4 operator/(const Mat4 &a, float d);
-bool operator==(const Mat4 &a, const Mat4 &b);
-bool operator!=(const Mat4 &a, const Mat4 &b);
-std::ostream& operator<<(std::ostream& out, const Mat4& mat);
-
-/*****************************************************************************
- * Vec2                                                                      *
- *****************************************************************************/
-
+/*
 class Vec2 {
 public:
   float x, y;
@@ -94,86 +48,7 @@ Vec2 operator/(const Vec2 &v, float d);
 bool operator==(const Vec2 &a, const Vec2 &b);
 bool operator!=(const Vec2 &a, const Vec2 &b);
 std::ostream& operator<<(std::ostream& out, const Vec2& v);
-
-/*****************************************************************************
- * Vec3                                                                      *
- *****************************************************************************/
-
-class Vec3 {
-public:
-  float x, y, z;
-
-  static const Vec3 ZERO;
-  static const Vec3 UNIT_X;
-  static const Vec3 UNIT_Y;
-  static const Vec3 UNIT_Z;
-
-  Vec3();
-  Vec3(float x, float y, float z);
-  Vec3(const Vec2 &xy, float z);
-  Vec3(const Vec3 &a);
-
-  Vec3& operator=(const Vec3& a);
-  Vec3& operator+=(const Vec3 &b);
-  Vec3& operator-=(const Vec3 &b);
-  Vec3& operator*=(float s);
-  float len() const;
-  float len2() const;
-  Vec3 unit() const;
-};
-
-float dot(const Vec3 &a, const Vec3 &b);
-Vec3 cross(const Vec3 &a, const Vec3 &b);
-Vec3 proj(const Vec3 &a, const Vec3 &b); // projection of a onto b
-float angleBetween(const Vec3 &a, const Vec3 &b);
-Quat quatBetween(const Vec3 &a, const Vec3 &b);
-Vec3 operator-(const Vec3 &v);
-Vec3 operator+(const Vec3 &a, const Vec3 &b);
-Vec3 operator-(const Vec3 &a, const Vec3 &b);
-Vec3 operator*(const Vec3 &v, float s);
-Vec3 operator*(float s, const Vec3 &v);
-Vec3 operator/(const Vec3 &v, float d);
-bool operator==(const Vec3 &a, const Vec3 &b);
-bool operator!=(const Vec3 &a, const Vec3 &b);
-std::ostream& operator<<(std::ostream& out, const Vec3& v);
-
-/*****************************************************************************
- * Vec4                                                                      *
- *****************************************************************************/
-
-class Vec4 {
-public:
-  float x, y, z, w;
-
-  static const Vec4 ZERO;
-  static const Vec4 UNIT_X;
-  static const Vec4 UNIT_Y;
-  static const Vec4 UNIT_Z;
-  static const Vec4 UNIT_W;
-
-  Vec4();
-  Vec4(float x, float y, float z, float w);
-  Vec4(const Vec3 &xyz, float w);
-  Vec4(const Vec4 &a);
-
-  Vec4& operator=(const Vec4& a);
-  Vec4& operator+=(const Vec4 &b);
-  Vec4& operator-=(const Vec4 &b);
-  Vec4& operator*=(float s);
-
-  Vec3 unHomogenize() const; // Normalize homogeneous coordinates
-  Vec3 dropW() const;
-};
-
-Vec4 operator-(const Vec4 &v);
-Vec4 operator+(const Vec4 &a, const Vec4 &b);
-Vec4 operator-(const Vec4 &a, const Vec4 &b);
-Vec4 operator*(const Vec4 &v, float s);
-Vec4 operator*(float s, const Vec4 &v);
-Vec4 operator/(const Vec4 &v, float d);
-bool operator==(const Vec4 &a, const Vec4 &b);
-bool operator!=(const Vec4 &a, const Vec4 &b);
-std::ostream& operator<<(std::ostream& out, const Vec4& v);
+*/
 
 /*****************************************************************************
  * Quat                                                                      *
@@ -216,9 +91,6 @@ public:
 
   Ray(const Vec3 &origin, const Vec3 &direction);
 };
-
-// Treats v as a column matrix and does m * v
-Vec4 operator*(const Mat4 &m, const Vec4 &v);
 
 // Transforms both origin and direction of a Ray
 Ray operator*(const Mat4 &m, const Ray &r);

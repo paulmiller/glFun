@@ -166,12 +166,13 @@ int submain() {
 
   assert(checkGL());
 
-  int vox_vol_size = 200;
+  int vox_vol_size = 100;
   BoolVoxVol vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {
       for(int x = 0; x < vox_vol_size; x++) {
-        if(vox_vol.centerOf(x, y, z).len() < 1.0f) {
+        Vec3 v = vox_vol.centerOf(x, y, z);
+        if(pow(v.x,12) + pow(v.y,12) + pow(v.z,12) < 1.0f) {
           vox_vol.at(x, y, z) = true;
         }
       }
