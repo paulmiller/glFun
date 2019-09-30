@@ -6,9 +6,6 @@
 
 #include "catch.h"
 
-namespace glfun {
-namespace math {
-
 TEST_CASE("MatrixFromColumnVectors") {
   auto actual3x3 = MatrixFromColumnVectors(
     Vector3<int>{1, 2, 3},
@@ -139,6 +136,3 @@ TEST_CASE("ScaleMatrix4x4") {
   }};
   REQUIRE(actual == expected);
 }
-
-} // namespace math
-} // namespace glfun

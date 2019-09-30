@@ -6,7 +6,6 @@
 #include "image_png.h"
 #include "mesh.h"
 #include "mesh_obj.h"
-#include "object.h"
 #include "ohno.h"
 #include "util.h"
 #include "vox_vol.h"
@@ -85,7 +84,7 @@ void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
     std::cout << "click x=" << xpos << " y=" << ypos << std::endl;
-    Vec3 near, far;
+    Vector3f near, far;
     camera_ptr->castPixel(int(xpos), int(ypos), near, far);
     std::cout << "cast near=" << near << " far=" << far << std::endl;
     std::cout << "hit=" << widget_ptr->intersects(near, far - near) << std::endl;
@@ -171,7 +170,7 @@ int submain() {
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {
       for(int x = 0; x < vox_vol_size; x++) {
-        Vec3 v = vox_vol.centerOf(x, y, z);
+        Vector3f v = vox_vol.centerOf(x, y, z);
         if(pow(v.x,12) + pow(v.y,12) + pow(v.z,12) < 1.0f) {
           vox_vol.at(x, y, z) = true;
         }
@@ -184,7 +183,7 @@ int submain() {
     size_t tris_size = vox_vol_mesh.tris.size();
     std::cout << "vox mesh: "
       << verts_size << " verts, "
-      << (verts_size * sizeof(Vec3) / 1024) << " KB, "
+      << (verts_size * sizeof(Vector3f) / 1024) << " KB, "
       << tris_size << " tris, "
       << (tris_size * sizeof(Tri) / 1024) << " KB\n";
   }
@@ -243,24 +242,24 @@ int submain() {
     bool going_up       = getCommandState(UP);
     bool going_down     = getCommandState(DOWN);
 
-    Vec3 move = Vec3::ZERO;
+    Vector3f move = Zero_Vector3f;
 
     if(going_forward && !going_backward)
-      move += Vec3(0, 0, -1);
+      move += Vector3f(0, 0, -1);
     else if(going_backward && !going_forward)
-      move += Vec3(0, 0, 1);
+      move += Vector3f(0, 0, 1);
 
     if(going_left && !going_right)
-      move += Vec3(-1, 0, 0);
+      move += Vector3f(-1, 0, 0);
     else if(going_right && !going_left)
-      move += Vec3(1, 0, 0);
+      move += Vector3f(1, 0, 0);
 
     if(going_up && !going_down)
-      move += Vec3(0, 1, 0);
+      move += Vector3f(0, 1, 0);
     else if(going_down && !going_up)
-      move += Vec3(0, -1, 0);
+      move += Vector3f(0, -1, 0);
 
-    if(move != Vec3::ZERO) {
+    if(move != Zero_Vector3f) {
       move = move.unit() * 0.05;
       camera_obj.moveLocal(move);
     }
@@ -269,12 +268,12 @@ int submain() {
     bool turning_right = getCommandState(TURN_RIGHT);
 
     if(turning_left && !turning_right)
-      camera_obj.rot *= Quat::rotation(Vec3::UNIT_Y, 0.03);
+      camera_obj.rot *= Quat::rotation(UnitY_Vector3f, 0.03);
     else if(turning_right && !turning_left)
-      camera_obj.rot *= Quat::rotation(Vec3::UNIT_Y, -0.03);
+      camera_obj.rot *= Quat::rotation(UnitY_Vector3f, -0.03);
 
-    Vec3 forward = (Mat4::rotation(camera_obj.rot) * -Vec4::UNIT_Z).dropW();
-    camera.look(camera_obj.pos, forward, Vec3::UNIT_Y);
+    Vector3f forward = (Matrix4x4f::rotation(camera_obj.rot) * -Vector4f::UNIT_Z).dropW();
+    camera.look(camera_obj.pos, forward, UnitY_Vector3f);
     */
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -283,8 +282,8 @@ int submain() {
 
     glUseProgram(norm_tex_program_id);
 
-    glUniformMatrix4fv(norm_tex_program_mvp_id, 1, GL_FALSE,
-      camera_control.getCam()->getTransform().data());
+    UniformMatrix(norm_tex_program_mvp_id,
+                  camera_control.getCam()->getTransform());
 
     assert(checkGL());
 
@@ -347,8 +346,7 @@ int submain() {
 
     glUseProgram(norm_program_id);
 
-    glUniformMatrix4fv(norm_program_mvp_id, 1, GL_FALSE,
-      camera_control.getCam()->getTransform().data());
+    UniformMatrix(norm_program_mvp_id, camera_control.getCam()->getTransform());
 
     assert(checkGL());
 

@@ -7,9 +7,6 @@
 
 #include <cmath>
 
-namespace glfun {
-namespace math {
-
 template<int Rows, int Cols>
 class ApproxMatrix : public ApproxContainer {
 public:
@@ -59,8 +56,5 @@ inline std::ostream& operator<<(
 ) {
   return out << "Approx:\n" << am.matrix;
 }
-
-} // namespace math
-} // namespace glfun
 
 #endif

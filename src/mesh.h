@@ -1,7 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "math3d.h"
+#include "math/vector.h"
 
 #include <iostream>
 #include <string>
@@ -34,14 +34,14 @@ public:
 // a mesh of triangles
 class TriMesh {
 public:
-  std::vector<Vec3> verts;
-  std::vector<Vec3> normals;
+  std::vector<Vector3f> verts;
+  std::vector<Vector3f> normals;
   std::vector<UvCoord> uvs;
   std::vector<Tri> tris;
 
 public:
   // Check for intersection with a line segment
-  bool intersects(const Vec3 &start, const Vec3 &end) const;
+  bool intersects(const Vector3f &start, const Vector3f &end) const;
 };
 
 #endif

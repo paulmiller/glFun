@@ -175,11 +175,11 @@ void WavFrObj::parseFrom(const std::string& input) {
 
     'v' (S+ #tags R){3} E {
       assert(tags->size() == 3);
-      verts_.emplace_back(
+      verts_.push_back(Vector3f{
         strtof(tags[0], nullptr),
         strtof(tags[1], nullptr),
         strtof(tags[2], nullptr)
-      );
+      });
       tags->clear();
       continue;
     }
@@ -195,11 +195,11 @@ void WavFrObj::parseFrom(const std::string& input) {
 
     'vn' (S+ #tags R){3} E {
       assert(tags->size() == 3);
-      normals_.emplace_back(
+      normals_.emplace_back(Vector3f{
         strtof(tags[0], nullptr),
         strtof(tags[1], nullptr),
         strtof(tags[2], nullptr)
-      );
+      });
       tags->clear();
       continue;
     }

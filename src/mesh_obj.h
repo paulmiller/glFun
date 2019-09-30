@@ -1,7 +1,7 @@
 #ifndef MESH_OBJ_H
 #define MESH_OBJ_H
 
-#include "math3d.h"
+#include "math/vector.h"
 #include "mesh.h"
 
 #include <string>
@@ -53,9 +53,9 @@ private:
   void addFaceToCurrentObject(std::vector<ObjVert> &&verts);
   void sanitize();
 
-  std::vector<Vec3> verts_; // vertex positions
+  std::vector<Vector3f> verts_; // vertex positions
   std::vector<UvCoord> uvs_; // texture coordinates (with V component flipped)
-  std::vector<Vec3> normals_; // normal vectors
+  std::vector<Vector3f> normals_; // normal vectors
   std::vector<ObjObject> objects_;
 };
 

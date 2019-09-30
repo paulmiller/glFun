@@ -5,9 +5,6 @@
 
 #include "catch.h"
 
-namespace glfun {
-namespace math {
-
 TEST_CASE("Vector initialization") {
   Vector3<int> v3 {1,2,3};
   REQUIRE(v3.x == 1);
@@ -51,11 +48,9 @@ TEST_CASE("Vector3 cross product") {
 }
 
 TEST_CASE("Vector3 projection") {
-  Vector3d a {1,1,1};
-  Vector3d b {10,0,0};
-  Vector3d c {0, 0.5, 0.5};
-  REQUIRE(proj(a, b) == ApproxVector3(Vector3d{1,0,0}));
-  REQUIRE(proj(a, c) == ApproxVector3(Vector3d{0,1,1}));
+  Vector3d v {1,1,1};
+  REQUIRE(proj(v, Vector3d{10,0,0}) == ApproxVector3(Vector3d{1,0,0}));
+  REQUIRE(proj(v, Vector3d{0,0.5,0.5}) == ApproxVector3(Vector3d{0,1,1}));
 }
 
 TEST_CASE("Vector3 angles") {
@@ -69,6 +64,3 @@ TEST_CASE("Vector3 angles") {
   REQUIRE(angleBetween(Vector3d{1,1,1}, Vector3d{-1,-1,-1}) ==
     Approx(Tau_d/2));
 }
-
-} // namespace math
-} // namespace glfun

@@ -6,9 +6,6 @@
 #include <cassert>
 #include <cmath>
 
-namespace glfun {
-namespace math {
-
 template<typename T>
 Matrix<T,3,3> MatrixFromColumnVectors(
   Vector3<T> c0, Vector3<T> c1, Vector3<T> c2
@@ -102,8 +99,5 @@ Matrix<T,4,4> ScaleMatrix4x4(Vector3<T> v) {
     {  0,   0,   0, 1}
   }};
 }
-
-} // namespace math
-} // namespace glfun
 
 #endif

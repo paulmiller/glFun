@@ -9,9 +9,6 @@
 #include <ostream>
 #include <type_traits>
 
-namespace glfun {
-namespace math {
-
 /*
 A template for arbitrary types and sizes of matrices
 
@@ -343,8 +340,5 @@ inline std::ostream& operator<<(
   }
   return out;
 }
-
-} // namespace math
-} // namespace glfun
 
 #endif

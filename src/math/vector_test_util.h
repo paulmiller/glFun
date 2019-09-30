@@ -7,9 +7,6 @@
 
 #include <cmath>
 
-namespace glfun {
-namespace math {
-
 // --- Approx Vector3 ------------------------------------------------------- //
 
 class ApproxVector3 : public ApproxContainer {
@@ -60,7 +57,7 @@ public:
 };
 
 inline bool operator==(const Vector4<double> &v, const ApproxVector4 &av) {
-  return v == av;
+  return av == v;
 }
 
 inline bool operator!=(const ApproxVector4 &av, const Vector4<double> &v) {
@@ -74,8 +71,5 @@ inline bool operator!=(const Vector4<double> &v, const ApproxVector4 &av) {
 inline std::ostream& operator<<(std::ostream& out, const ApproxVector4 &av) {
   return out << "Approx:\n" << av.vector;
 }
-
-} // namespace math
-} // namespace glfun
 
 #endif

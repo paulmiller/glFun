@@ -9,9 +9,9 @@ common_srcs = [
   'image',
   'image_hdr',
   'image_png',
-  'math3d',
+  'math/matrix',
+  'math/vector',
   'mesh',
-  'object',
   'ohno',
   'util',
   'vox_vol',
@@ -24,13 +24,15 @@ main_srcs = [
 test_srcs = [
   'catch_main',
   'image_test',
-  'math3d_test'
+  'math/matrix_test',
+  'math/matrix_factories_test',
+  'math/vector_test',
 ]
 
 build = open('build.ninja', 'w')
 
 build.write('''cc = clang++
-cflags = -std=c++17 -Wall -Wextra -Wno-unused-parameter -g -O0 -Ilibs/catch
+cflags = -std=c++17 -Wall -Wextra -Wno-unused-parameter -g -Isrc/ -Ilibs/catch/
 libs = -lm -lGL -lGLEW -lglfw -lpng
 
 rule re2c

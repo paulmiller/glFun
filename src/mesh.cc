@@ -1,5 +1,7 @@
 #include "mesh.h"
 
+#include "math/matrix_factories.h"
+#include "math/matrix_vector_product.h"
 #include "util.h"
 
 #include <cstring>
@@ -32,8 +34,8 @@ namespace {
   // Test whether a ray starting at E and extending in direction D intersects a
   // triangle with vertices A, B, and C.
   bool intersects(
-    const Vec3 &E, const Vec3 &D,
-    const Vec3 &A, const Vec3 &B, const Vec3 &C
+    const Vector3f &E, const Vector3f &D,
+    const Vector3f &A, const Vector3f &B, const Vector3f &C
   ) {
     /*
     The line segment is given by:
@@ -63,16 +65,15 @@ namespace {
     [ t ]   [               ]     [     ]
     */
 
-    Mat3 mat(B-A, C-A, D-E);
-
-    float det = mat.determinate();
-    if(det == 0) return false;
-
-    Mat3 inv = mat.transpose() / det;
-    Vec3 bct = inv * Vec3(E-A);
+    // TODO proper inverse matrix function
+    Matrix3x3f m = MatrixFromColumnVectors(B-A, C-A, D-E);
+    float d = m.determinant();
+    if(d == 0) return false;
+    m = m.transpose() / d;
+    Vector3f bct = m * (E-A);
     float b = bct.x;
     float c = bct.y;
-    float t = bct.t;
+    float t = bct.z;
     return
       0 <= b && b <= 1 &&
       0 <= c && c <= 1 &&
@@ -82,27 +83,27 @@ namespace {
 
   /*
   assert(intersects(
-    Vec3(0,0,0), Vec3(1,1,1),
-    Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1)
+    Vector3f(0,0,0), Vector3f(1,1,1),
+    Vector3f(1,0,0), Vector3f(0,1,0), Vector3f(0,0,1)
   ));
   assert(!intersects(
-    Vec3(0,0,0), Vec3(-1,1,1),
-    Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1)
+    Vector3f(0,0,0), Vector3f(-1,1,1),
+    Vector3f(1,0,0), Vector3f(0,1,0), Vector3f(0,0,1)
   ));
   assert(!intersects(
-    Vec3(0,0,0), Vec3(1,1,1),
-    Vec3(0,0,1), Vec3(1,0,1), Vec3(0,1,1)
+    Vector3f(0,0,0), Vector3f(1,1,1),
+    Vector3f(0,0,1), Vector3f(1,0,1), Vector3f(0,1,1)
   ));
   */
 }
 
 #include <iostream>
 
-bool TriMesh::intersects(const Vec3 &start, const Vec3 &end) const {
+bool TriMesh::intersects(const Vector3f &start, const Vector3f &end) const {
   for(auto tri_it = tris.begin(); tri_it != tris.end(); ++tri_it) {
-    const Vec3 &A = verts[tri_it->vert_idxs[0]];
-    const Vec3 &B = verts[tri_it->vert_idxs[1]];
-    const Vec3 &C = verts[tri_it->vert_idxs[2]];
+    const Vector3f &A = verts[tri_it->vert_idxs[0]];
+    const Vector3f &B = verts[tri_it->vert_idxs[1]];
+    const Vector3f &C = verts[tri_it->vert_idxs[2]];
     if(::intersects(start, end, A, B, C))
       return true;
   }

@@ -4,9 +4,6 @@
 
 #include "catch.h"
 
-namespace glfun {
-namespace math {
-
 namespace {
   const Matrix<int,1,1> a1x1 {{{1}}};
 
@@ -202,6 +199,3 @@ TEST_CASE("Matrix multiplication") {
   }};
   REQUIRE(a3x4 * a4x3 == product3x3);
 }
-
-} // namespace math
-} // namespace glfun

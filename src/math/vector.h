@@ -5,9 +5,6 @@
 #include <cmath>
 #include <ostream>
 
-namespace glfun {
-namespace math {
-
 template<typename T> class Vector3;
 
 typedef Vector3<float> Vector3f;
@@ -320,8 +317,5 @@ template<typename T>
 inline std::ostream& operator<<(std::ostream& out, const Vector4<T>& v) {
   return out << '<' << v.x << ' ' << v.y << ' ' << v.z << ' ' << v.w << '>';
 }
-
-} // namespace math
-} // namespace glfun
 
 #endif

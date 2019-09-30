@@ -5,8 +5,6 @@
 
 #include <limits>
 
-namespace glfun {
-
 class ApproxContainer {
 public:
   void SetEpsilon(double epsilon) {
@@ -41,7 +39,5 @@ private:
   double margin_  = NaN;
   double scale_   = NaN;
 };
-
-} // namespace glfun
 
 #endif

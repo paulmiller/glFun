@@ -36,12 +36,12 @@ float BoolVoxVol::voxSizeX() { return (x_max_ - x_min_) / x_size_; }
 float BoolVoxVol::voxSizeY() { return (y_max_ - y_min_) / y_size_; }
 float BoolVoxVol::voxSizeZ() { return (z_max_ - z_min_) / z_size_; }
 
-Vec3 BoolVoxVol::centerOf(int x, int y, int z) {
-  return Vec3(
+Vector3f BoolVoxVol::centerOf(int x, int y, int z) {
+  return Vector3f {
     x_min_ + (x + 0.5f) * voxSizeX(),
     y_min_ + (y + 0.5f) * voxSizeY(),
     z_min_ + (z + 0.5f) * voxSizeZ()
-  );
+  };
 }
 
 TriMesh BoolVoxVol::createBlockMesh() {
@@ -51,12 +51,12 @@ TriMesh BoolVoxVol::createBlockMesh() {
 
   TriMesh mesh;
   mesh.normals.reserve(6);
-  mesh.normals.push_back( Vec3::UNIT_X); constexpr int x_pos_normal = 0;
-  mesh.normals.push_back(-Vec3::UNIT_X); constexpr int x_neg_normal = 1;
-  mesh.normals.push_back( Vec3::UNIT_Y); constexpr int y_pos_normal = 2;
-  mesh.normals.push_back(-Vec3::UNIT_Y); constexpr int y_neg_normal = 3;
-  mesh.normals.push_back( Vec3::UNIT_Z); constexpr int z_pos_normal = 4;
-  mesh.normals.push_back(-Vec3::UNIT_Z); constexpr int z_neg_normal = 5;
+  mesh.normals.push_back( UnitX_Vector3f); constexpr int x_pos_normal = 0;
+  mesh.normals.push_back(-UnitX_Vector3f); constexpr int x_neg_normal = 1;
+  mesh.normals.push_back( UnitY_Vector3f); constexpr int y_pos_normal = 2;
+  mesh.normals.push_back(-UnitY_Vector3f); constexpr int y_neg_normal = 3;
+  mesh.normals.push_back( UnitZ_Vector3f); constexpr int z_pos_normal = 4;
+  mesh.normals.push_back(-UnitZ_Vector3f); constexpr int z_neg_normal = 5;
 
   // map from a vertex's XYZ address within the volume to that vertex's offset
   // within mesh.verts
@@ -67,11 +67,11 @@ TriMesh BoolVoxVol::createBlockMesh() {
     auto found = vert_offsets.find(key);
     int offset;
     if(found == vert_offsets.end()) {
-      mesh.verts.emplace_back(
+      mesh.verts.push_back(Vector3f {
         x_min_ + x * voxel_x_size,
         y_min_ + y * voxel_y_size,
         z_min_ + z * voxel_z_size
-      );
+      });
       offset = mesh.verts.size() - 1;
       vert_offsets[key] = offset;
     } else {

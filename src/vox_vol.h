@@ -1,7 +1,7 @@
 #ifndef VOX_VOL_H
 #define VOX_VOL_H
 
-#include "math3d.h"
+#include "math/vector.h"
 #include "mesh.h"
 
 #include <cassert>
@@ -67,7 +67,7 @@ public:
   float voxSizeZ();
 
   // get the position of the center of the voxel at the given x,y,z address
-  Vec3 centerOf(int x, int y, int z);
+  Vector3f centerOf(int x, int y, int z);
 
   TriMesh createBlockMesh();
 

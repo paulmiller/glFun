@@ -1,6 +1,6 @@
 #include "camera_control.h"
 
-#include "util.h"
+#include "math/util.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,7 @@ Camera *CameraControl::getCam() {
 
 void CameraControl::onFramebufferSize(int width, int height) {
   float aspect = float(width) / float(height);
-  float horiz_fov = PI_f / 2;
+  float horiz_fov = Pi_f / 2;
   cam_.setResolution(width, height);
   cam_.setFrustum(0.1f, 100.0f, horiz_fov, aspect);
 }
@@ -52,7 +52,7 @@ double CameraControl::draggedRotation() {
 
 double CameraControl::draggedDeclination() {
   double dy = drag_end_y_ - drag_start_y_;
-  return std::clamp(declination_ + dy * drag_scale_, -PI_d/2, PI_d/2);
+  return std::clamp(declination_ + dy * drag_scale_, -Pi_d/2, Pi_d/2);
 }
 
 void CameraControl::updateCamPos() {
@@ -60,9 +60,9 @@ void CameraControl::updateCamPos() {
   double new_declination = dragging_ ? draggedDeclination() : declination_;
 
   double cnd = cos(new_declination);
-  double new_x = distance_ * sin(new_rotation) * cnd;
-  double new_y = distance_ * sin(new_declination);
-  double new_z = distance_ * cos(new_rotation) * cnd;
+  float new_x = distance_ * sin(new_rotation) * cnd;
+  float new_y = distance_ * sin(new_declination);
+  float new_z = distance_ * cos(new_rotation) * cnd;
 
-  cam_.lookAt(Vec3(new_x, new_y, new_z), Vec3::ZERO, Vec3::UNIT_Y);
+  cam_.lookAt(Vector3f{new_x, new_y, new_z}, Zero_Vector3f, UnitY_Vector3f);
 }

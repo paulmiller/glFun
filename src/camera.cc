@@ -1,6 +1,7 @@
 #include "camera.h"
 
-#include "util.h"
+#include "math/matrix_vector_product.h"
+#include "math/util.h"
 
 #include <cassert>
 #include <cmath>
@@ -20,7 +21,7 @@ void Camera::setFrustum(
   assert(near_clip > 0);
   assert(far_clip > near_clip);
   assert(horiz_fov > 0);
-  assert(horiz_fov < PI_f);
+  assert(horiz_fov < Pi_f);
   assert(aspect > 0);
 
   float n = near_clip;
@@ -55,73 +56,73 @@ void Camera::setFrustum(
     2f / (f - n) - 1 = a
   */
 
-  proj_ = Mat4(
-    n/r,    0,           0,           0,
-       0, n/t,           0,           0,
-       0,   0, 2*f/(f-n)-1, 2*f*n/(f-n),
-       0,   0,          -1,           0
-  );
+  proj_ = Matrix4x4f {{
+    {n/r,    0,           0,           0},
+    {   0, n/t,           0,           0},
+    {   0,   0, 2*f/(f-n)-1, 2*f*n/(f-n)},
+    {   0,   0,          -1,           0}
+  }};
 
-  proj_inverse_ = Mat4(
-    r/n,   0,             0,             0,
-      0, t/n,             0,             0,
-      0,   0,             0,            -1,
-      0,   0, (f-n)/(2*f*n), (f+n)/(2*f*n)
-  );
+  proj_inverse_ = Matrix4x4f {{
+    {r/n,   0,             0,             0},
+    {  0, t/n,             0,             0},
+    {  0,   0,             0,            -1},
+    {  0,   0, (f-n)/(2*f*n), (f+n)/(2*f*n)}
+  }};
 }
 
-void Camera::look(const Vec3 &eye, const Vec3 &forward, const Vec3 &up) {
+void Camera::look(const Vector3f &eye, const Vector3f &forward, const Vector3f &up) {
   // Camera-space basis vectors
-  Vec3 b = -forward.unit(); // backwards
-  Vec3 r = cross(up, b).unit(); // right
-  Vec3 u = cross(b, r); // true up
+  Vector3f b = -forward.unit(); // backwards
+  Vector3f r = cross(up, b).unit(); // right
+  Vector3f u = cross(b, r); // true up
 
-  const Vec3 &e = eye;
+  const Vector3f &e = eye;
 
-  view_ = Mat4(
-    r.x, r.y, r.z, 0,
-    u.x, u.y, u.z, 0,
-    b.x, b.y, b.z, 0,
-      0,   0,   0, 1
-  ) * Mat4(
-    1, 0, 0, -e.x,
-    0, 1, 0, -e.y,
-    0, 0, 1, -e.z,
-    0, 0, 0,    1
-  );
+  view_ = Matrix4x4f {{
+    {r.x, r.y, r.z, 0},
+    {u.x, u.y, u.z, 0},
+    {b.x, b.y, b.z, 0},
+    {  0,   0,   0, 1}
+  }} * Matrix4x4f {{
+    {1, 0, 0, -e.x},
+    {0, 1, 0, -e.y},
+    {0, 0, 1, -e.z},
+    {0, 0, 0,    1}
+  }};
 
-  view_inverse_ = Mat4(
-    r.x, u.x, b.x, e.x,
-    r.y, u.y, b.y, e.y,
-    r.z, u.z, b.z, e.z,
-      0,   0,   0,   1
-  );
+  view_inverse_ = Matrix4x4f {{
+    {r.x, u.x, b.x, e.x},
+    {r.y, u.y, b.y, e.y},
+    {r.z, u.z, b.z, e.z},
+    {  0,   0,   0,   1}
+  }};
 }
 
-void Camera::lookAt(const Vec3 &eye, const Vec3 &target, const Vec3 &up) {
+void Camera::lookAt(const Vector3f &eye, const Vector3f &target, const Vector3f &up) {
   look(eye, target - eye, up);
 }
 
-Mat4 Camera::getTransform() const {
+Matrix4x4f Camera::getTransform() const {
   return proj_ * view_;
 }
 
-Mat4 Camera::getInvTransform() const {
+Matrix4x4f Camera::getInvTransform() const {
   return view_inverse_ * proj_inverse_;
 }
 
-void Camera::castPixel(int x_px, int y_px, Vec3 &near, Vec3 &far) const {
-  Mat4 inv = getInvTransform();
+void Camera::castPixel(int x_px, int y_px, Vector3f &near, Vector3f &far) const {
+  Matrix4x4f inv = getInvTransform();
 
   // Map pixel indices to screen coordinates
-  float x = linearMap(x_px, -0.5f, frame_width_px_  - 0.5f, -1.0f,  1.0f);
-  float y = linearMap(y_px, -0.5f, frame_height_px_ - 0.5f,  1.0f, -1.0f);
+  float x = linearMap(float(x_px), -0.5f, frame_width_px_  - 0.5f, -1.0f,  1.0f);
+  float y = linearMap(float(y_px), -0.5f, frame_height_px_ - 0.5f,  1.0f, -1.0f);
 
   // Points defining the ray, in viewing-volume-space
-  Vec3 view_near(x, y,  1);
-  Vec3 view_far (x, y, -1);
+  Vector3f view_near{x, y, 1};
+  Vector3f view_far {x, y,-1};
 
   // Points, in world-space
-  near = (inv * Vec4(view_near, 1)).unHomogenize();
-  far  = (inv * Vec4(view_far , 1)).unHomogenize();
+  near = (inv * Vector4f{view_near.x, view_near.y, view_near.z, 1}).divideByW();
+  far  = (inv * Vector4f{view_far.x,  view_far.y,  view_far.z,  1}).divideByW();
 }

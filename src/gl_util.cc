@@ -100,6 +100,10 @@ GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
   return program_id;
 }
 
+void UniformMatrix(GLint location, const Matrix4x4f &m) {
+  glUniformMatrix4fv(location, 1, GL_TRUE, &(m.data[0][0]));
+}
+
 GLuint vertVBO(const TriMesh &m) {
   // 3 verts per tri, 3 floats per vert
   int float_num = m.tris.size() * 3 * 3;
@@ -108,7 +112,7 @@ GLuint vertVBO(const TriMesh &m) {
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const Vec3 &v = m.verts[it->vert_idxs[i]];
+      const Vector3f &v = m.verts[it->vert_idxs[i]];
       vbo[b++] = v.x;
       vbo[b++] = v.y;
       vbo[b++] = v.z;
@@ -155,7 +159,7 @@ GLuint normVBO(const TriMesh &m) {
   int b = 0;
   for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
     for(int i = 0; i < 3; i++) {
-      const Vec3 &n = m.normals[it->normal_idxs[i]];
+      const Vector3f &n = m.normals[it->normal_idxs[i]];
       vbo[b++] = n.x;
       vbo[b++] = n.y;
       vbo[b++] = n.z;
