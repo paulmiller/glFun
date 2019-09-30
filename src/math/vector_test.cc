@@ -29,17 +29,89 @@ TEST_CASE("Vector initialization") {
   REQUIRE(v4_0.w == 0);
 }
 
+TEST_CASE("Vector equality") {
+  REQUIRE(Vector3<int>{1,2,3} == Vector3<int>{1,2,3});
+  REQUIRE(Vector3<int>{1,2,3} != Vector3<int>{0,2,3});
+  REQUIRE(Vector3<int>{1,2,3} != Vector3<int>{1,0,3});
+  REQUIRE(Vector3<int>{1,2,3} != Vector3<int>{1,2,0});
+
+  REQUIRE(Vector4<int>{1,2,3,4} == Vector4<int>{1,2,3,4});
+  REQUIRE(Vector4<int>{1,2,3,4} != Vector4<int>{0,2,3,4});
+  REQUIRE(Vector4<int>{1,2,3,4} != Vector4<int>{1,0,3,4});
+  REQUIRE(Vector4<int>{1,2,3,4} != Vector4<int>{1,2,0,4});
+  REQUIRE(Vector4<int>{1,2,3,4} != Vector4<int>{1,2,3,0});
+}
+
+TEST_CASE("Vector negation") {
+  REQUIRE(Vector3<int>{1,2,3} == -Vector3<int>{-1,-2,-3});
+  REQUIRE(Vector4<int>{1,2,3,4} == -Vector4<int>{-1,-2,-3,-4});
+}
+
+TEST_CASE("Vector addition") {
+  Vector3<int> a3 {1,2,3}, b3 {4,5,6}, c3 {5,7,9};
+  REQUIRE(a3 + b3 == c3);
+  a3 += b3;
+  REQUIRE(a3 == c3);
+
+  Vector4<int> a4 {1,2,3,4}, b4 {5,6,7,8}, c4 {6,8,10,12};
+  REQUIRE(a4 + b4 == c4);
+  a4 += b4;
+  REQUIRE(a4 == c4);
+}
+
+TEST_CASE("Vector subtraction") {
+  Vector3<int> a3 {1,2,3}, b3 {4,5,6}, c3 {-3,-3,-3};
+  REQUIRE(a3 - b3 == c3);
+  a3 -= b3;
+  REQUIRE(a3 == c3);
+
+  Vector4<int> a4 {1,2,3,4}, b4 {5,6,7,8}, c4 {-4,-4,-4,-4};
+  REQUIRE(a4 - b4 == c4);
+  a4 -= b4;
+  REQUIRE(a4 == c4);
+}
+
+TEST_CASE("Vector scalar multiplication") {
+  Vector3<int> v3 {1,2,3};
+  Vector3<int> v3_2 {2,4,6};
+  REQUIRE(v3 * 2 == v3_2);
+  REQUIRE(2 * v3 == v3_2);
+  v3 *= 2;
+  REQUIRE(v3 == v3_2);
+
+  Vector4<int> v4 {1,2,3,4};
+  Vector4<int> v4_2 {2,4,6,8};
+  REQUIRE(v4 * 2 == v4_2);
+  REQUIRE(2 * v4 == v4_2);
+  v4 *= 2;
+  REQUIRE(v4 == v4_2);
+}
+
+TEST_CASE("Vector scalar division") {
+  Vector3<int> v3 {1,2,3};
+  Vector3<int> v3_2 {2,4,6};
+  REQUIRE(v3_2 / 2 == v3);
+  v3_2 /= 2;
+  REQUIRE(v3 == v3_2);
+
+  Vector4<int> v4 {1,2,3,4};
+  Vector4<int> v4_2 {2,4,6,8};
+  REQUIRE(v4_2 / 2 == v4);
+  v4_2 /= 2;
+  REQUIRE(v4 == v4_2);
+}
+
+TEST_CASE("Vector dot product") {
+  REQUIRE(dot(Vector3<int>{1,2,3}, Vector3<int>{4,5,6}) == 32);
+  REQUIRE(dot(Vector4<int>{1,2,3,4}, Vector4<int>{5,6,7,8}) == 70);
+}
+
 TEST_CASE("Vector3 length") {
   // 2^2 + 3^2 + 6^2 = 7^2
   Vector3d v {2,3,6};
   REQUIRE(v.len() == 7);
   REQUIRE(v.len2() == 7*7);
   REQUIRE(v.unit() == Vector3d {2.0/7.0, 3.0/7.0, 6.0/7.0});
-}
-
-TEST_CASE("vector dot product") {
-  REQUIRE(dot(Vector3<int>{1,2,3}, Vector3<int>{4,5,6}) == 32);
-  REQUIRE(dot(Vector4<int>{1,2,3,4}, Vector4<int>{5,6,7,8}) == 70);
 }
 
 TEST_CASE("Vector3 cross product") {

@@ -26,6 +26,7 @@ test_srcs = [
   'image_test',
   'math/matrix_test',
   'math/matrix_factories_test',
+  'math/matrix_vector_product_test',
   'math/vector_test',
 ]
 
