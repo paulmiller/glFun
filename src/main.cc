@@ -11,6 +11,7 @@
 #include "vox_vol.h"
 
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -165,8 +166,8 @@ int submain() {
 
   assert(checkGL());
 
-  int vox_vol_size = 100;
-  BoolVoxVol vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
+  int vox_vol_size = 200;
+  VoxVol vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {
       for(int x = 0; x < vox_vol_size; x++) {
@@ -177,15 +178,20 @@ int submain() {
       }
     }
   }
+  auto t1 = std::chrono::steady_clock::now();
   TriMesh vox_vol_mesh = vox_vol.createBlockMesh();
+  auto t2 = std::chrono::steady_clock::now();
   {
+    auto seconds =
+      std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
     size_t verts_size = vox_vol_mesh.verts.size();
     size_t tris_size = vox_vol_mesh.tris.size();
     std::cout << "vox mesh: "
-      << verts_size << " verts, "
-      << (verts_size * sizeof(Vector3f) / 1024) << " KB, "
-      << tris_size << " tris, "
-      << (tris_size * sizeof(Tri) / 1024) << " KB\n";
+      << verts_size << " verts ("
+      << (verts_size * sizeof(Vector3f) / 1024) << " KiB), "
+      << tris_size << " tris, ("
+      << (tris_size * sizeof(Tri) / 1024) << " KiB), "
+      << seconds << " seconds\n";
   }
 
   GLuint vox_vol_vert_buffer_id = vertVBO(vox_vol_mesh);

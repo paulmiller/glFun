@@ -49,12 +49,12 @@ The opposite vertex (x_size_, y_size_, z_size_) is at (x_max_, y_max_, z_max_).
 The vertex (1,0,0) is at (x_min_ + X, y_min_, z_min_), where X is the x-axis
 length of a single voxel: X = (x_max_ - x_min_) / x_size_.
 */
-class BoolVoxVol {
+class VoxVol {
 public:
-  BoolVoxVol(int x_size, int y_size, int z_size);
+  VoxVol(int x_size, int y_size, int z_size);
 
   // get the voxel at the given x,y,z address
-  inline std::vector<bool>::reference at(int x, int y, int z) {
+  inline std::vector<char>::reference at(int x, int y, int z) {
     assert(x >= 0); assert(x < x_size_);
     assert(y >= 0); assert(y < y_size_);
     assert(z >= 0); assert(z < z_size_);
@@ -74,7 +74,7 @@ public:
 private:
   float x_min_, x_max_, y_min_, y_max_, z_min_, z_max_; // volume boundaries
   int x_size_, y_size_, z_size_; // number of voxels
-  std::vector<bool> vox_; // voxels, in z-major order
+  std::vector<char> vox_; // voxels, in z-major order
 };
 
 #endif

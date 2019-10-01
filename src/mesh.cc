@@ -97,8 +97,6 @@ namespace {
   */
 }
 
-#include <iostream>
-
 bool TriMesh::intersects(const Vector3f &start, const Vector3f &end) const {
   for(auto tri_it = tris.begin(); tri_it != tris.end(); ++tri_it) {
     const Vector3f &A = verts[tri_it->vert_idxs[0]];
