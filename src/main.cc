@@ -166,20 +166,19 @@ int submain() {
 
   assert(checkGL());
 
-  int vox_vol_size = 200;
-  VoxVol vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
+  int vox_vol_size = 2;
+  VoxelVolume vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {
       for(int x = 0; x < vox_vol_size; x++) {
-        Vector3f v = vox_vol.centerOf(x, y, z);
-        if(pow(v.x,12) + pow(v.y,12) + pow(v.z,12) < 1.0f) {
-          vox_vol.at(x, y, z) = true;
-        }
+        Vector3f v = vox_vol.CenterOf(x, y, z);
+        if(pow(v.x,12) + pow(v.y,12) + pow(v.z,12) < 1.0f)
+          vox_vol.at(x, y, z) = 1;
       }
     }
   }
   auto t1 = std::chrono::steady_clock::now();
-  TriMesh vox_vol_mesh = vox_vol.createBlockMesh();
+  TriMesh vox_vol_mesh = vox_vol.CreateBlockMesh();
   auto t2 = std::chrono::steady_clock::now();
   {
     auto seconds =
