@@ -35,6 +35,7 @@ include_directories(./)
 
 add_executable(glfun main.cc ${common_sources})
 target_link_libraries(glfun math)
+target_link_libraries(glfun xxHash::xxhash)
 
 add_executable(test ${test_sources} ${common_sources})
 target_link_libraries(test math)
