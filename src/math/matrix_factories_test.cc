@@ -1,8 +1,8 @@
-#include "math/matrix_factories.h"
+#include "matrix_factories.h"
 
-#include "math/util.h"
-#include "math/vector.h"
-#include "math/matrix_test_util.h"
+#include "util.h"
+#include "vector.h"
+#include "matrix_test_util.h"
 
 #include "catch.h"
 

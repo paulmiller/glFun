@@ -1,4 +1,4 @@
-#include "math/matrix.h"
+#include "matrix.h"
 
 const Matrix3x3f Zero_Matrix3x3f {};
 const Matrix3x3f Identity_Matrix3x3f {{

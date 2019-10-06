@@ -1,10 +1,19 @@
-Run mkbuild to create build.ninja, then build with ninja.
+OpenGL experiment
 
-Required libs:
+required libraries:
 - GL
 - GLEW
 - GLFW
 - libpng
-Requried build tools:
-- ninja
+
+requried build tools:
+- CMake
 - re2c
+
+example commands build, test, and run:
+$ cd out/
+$ CC=clang CXX=clang++ cmake -G Ninja ..
+$ cd ..
+$ out/test
+$ out/math_test
+$ out/glfun

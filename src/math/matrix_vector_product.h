@@ -1,8 +1,8 @@
 #ifndef GLFUN_MATH_MATRIX_VECTOR_PRODUCT_H
 #define GLFUN_MATH_MATRIX_VECTOR_PRODUCT_H
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "matrix.h"
+#include "vector.h"
 
 template<typename T>
 inline Vector3<T> operator*(

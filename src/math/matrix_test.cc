@@ -1,6 +1,6 @@
-#include "math/matrix.h"
+#include "matrix.h"
 
-#include "math/matrix_test_util.h"
+#include "matrix_test_util.h"
 
 #include "catch.h"
 

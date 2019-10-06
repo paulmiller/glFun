@@ -1,7 +1,7 @@
 #ifndef GLFUN_VECTOR_TEST_UTIL_H
 #define GLFUN_VECTOR_TEST_UTIL_H
 
-#include "math/vector.h"
+#include "vector.h"
 
 #include "approx_container.h"
 

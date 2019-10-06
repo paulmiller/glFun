@@ -1,6 +1,6 @@
-#include "math/matrix_vector_product.h"
+#include "matrix_vector_product.h"
 
-#include "math/vector_test_util.h"
+#include "vector_test_util.h"
 
 #include "catch.h"
 

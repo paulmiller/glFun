@@ -5,7 +5,7 @@ constexpr double Pi_d = 3.1415926535897932384626433832795028841972;
 constexpr float Pi_f = Pi_d;
 
 constexpr double Tau_d = 2 * Pi_d;
-constexpr float Tau_f = Tau_f;
+constexpr float Tau_f = Tau_d;
 
 constexpr double Root2_d = 1.4142135623730950488016887242096980785697;
 constexpr float Root2_f = Root2_d;

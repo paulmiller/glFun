@@ -1,7 +1,7 @@
 #ifndef GLFUN_MATRIX_TEST_UTIL_H
 #define GLFUN_MATRIX_TEST_UTIL_H
 
-#include "math/matrix.h"
+#include "matrix.h"
 
 #include "approx_container.h"
 

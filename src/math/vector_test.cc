@@ -1,7 +1,7 @@
-#include "math/vector.h"
+#include "vector.h"
 
-#include "math/util.h"
-#include "math/vector_test_util.h"
+#include "util.h"
+#include "vector_test_util.h"
 
 #include "catch.h"
 

@@ -1,7 +1,7 @@
 #ifndef GLFUN_MATH_MATRIX_H
 #define GLFUN_MATH_MATRIX_H
 
-#include "math/vector.h"
+#include "vector.h"
 
 #include <algorithm>
 #include <cassert>

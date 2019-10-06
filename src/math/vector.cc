@@ -1,4 +1,4 @@
-#include "math/vector.h"
+#include "vector.h"
 
 const Vector3f Zero_Vector3f{};
 const Vector3d Zero_Vector3d{};

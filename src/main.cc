@@ -166,7 +166,7 @@ int submain() {
 
   assert(checkGL());
 
-  int vox_vol_size = 2;
+  int vox_vol_size = 100;
   VoxelVolume vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {

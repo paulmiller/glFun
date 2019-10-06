@@ -1,7 +1,7 @@
 #ifndef GLFUN_MATH_MATRIX_FACTORIES_H
 #define GLFUN_MATH_MATRIX_FACTORIES_H
 
-#include "math/matrix.h"
+#include "matrix.h"
 
 #include <cassert>
 #include <cmath>
