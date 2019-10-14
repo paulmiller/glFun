@@ -1,11 +1,15 @@
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-Wall -Wextra -Wno-unused-parameter -g)
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -g -O3)
 
 add_subdirectory(math)
 
+set(mesh_obj_parser_input  "${CMAKE_CURRENT_SOURCE_DIR}/mesh_obj_parser.re.cc")
+set(mesh_obj_parser_output "${CMAKE_CURRENT_BINARY_DIR}/mesh_obj_parser.cc")
+
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mesh_obj.cc
-  COMMAND re2c -W ${CMAKE_CURRENT_SOURCE_DIR}/mesh_obj.re.cc -o ${CMAKE_CURRENT_BINARY_DIR}/mesh_obj.cc
+  DEPENDS ${mesh_obj_parser_input}
+  OUTPUT ${mesh_obj_parser_output}
+  COMMAND re2c -W ${mesh_obj_parser_input} -o ${mesh_obj_parser_output}
 )
 
 set(common_sources
@@ -19,12 +23,16 @@ set(common_sources
   image_png.cc
   mesh.cc
   mesh_obj.cc
+  mesh_obj_parser.cc
   ohno.cc
   util.cc
   vox_vol.cc
 )
 
-set(main_sources main.cc)
+set(main_sources
+  explore_shapes.cc
+  main.cc
+)
 
 set(test_sources
   catch_main.cc
@@ -33,7 +41,7 @@ set(test_sources
 
 include_directories(./)
 
-add_executable(glfun main.cc ${common_sources})
+add_executable(glfun ${main_sources} ${common_sources})
 target_link_libraries(glfun math)
 target_link_libraries(glfun xxHash::xxhash)
 

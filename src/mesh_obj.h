@@ -24,7 +24,9 @@ public:
   public:
     std::vector<ObjVert> verts;
 
-    ObjFace(std::vector<ObjVert> &&verts);
+    ObjFace() {}
+    ObjFace(std::vector<ObjVert> &&verts) :
+      verts(std::move(verts)) {}
   };
 
   class ObjObject {
@@ -34,24 +36,35 @@ public:
     int min_sides;
     int max_sides;
 
-    ObjObject(std::string &&name);
+    ObjObject(std::string &&name) :
+      name(std::move(name)), min_sides(0), max_sides(0) {}
+
     void addFace(std::vector<ObjVert> &&verts);
 
   private:
-    TriMesh getTriMesh(const WavFrObj *source) const;
+    TriMesh GetTriMesh(const WavFrObj *source) const;
 
     friend WavFrObj;
   };
 
-  void clear();
-  void parseFrom(const std::string &input);
+  void Clear();
+
   // extract the object named "name", all its faces, and all the vertex info
   // those faces refer to, and repack them into a TriMesh
-  TriMesh getTriMesh(std::string name) const;
+  TriMesh GetTriMesh(std::string name) const;
+
+  void AddObjectFromTriMesh(std::string name, const TriMesh &mesh);
+
+  // write a Wavefront OBJ string
+  std::string Export() const;
+
+  // read a Wavefront OBJ string
+  void ParseFrom(const std::string &input);
 
 private:
-  void addFaceToCurrentObject(std::vector<ObjVert> &&verts);
-  void sanitize();
+  // used by ParseFrom
+  void AddFaceToCurrentObject(std::vector<ObjVert> &&verts);
+  void Sanitize();
 
   std::vector<Vector3f> verts_; // vertex positions
   std::vector<UvCoord> uvs_; // texture coordinates (with V component flipped)

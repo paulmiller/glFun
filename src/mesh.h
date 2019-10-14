@@ -1,6 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "math/matrix.h"
 #include "math/vector.h"
 
 #include <iostream>
@@ -39,9 +40,10 @@ public:
   std::vector<UvCoord> uvs;
   std::vector<Tri> tris;
 
-public:
   // Check for intersection with a line segment
-  bool intersects(const Vector3f &start, const Vector3f &end) const;
+  bool Intersects(const Vector3f &start, const Vector3f &end) const;
+  void Transform(const Matrix4x4f &m);
+  void Merge(const TriMesh &src);
 };
 
 #endif

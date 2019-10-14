@@ -97,7 +97,7 @@ namespace {
   */
 }
 
-bool TriMesh::intersects(const Vector3f &start, const Vector3f &end) const {
+bool TriMesh::Intersects(const Vector3f &start, const Vector3f &end) const {
   for(auto tri_it = tris.begin(); tri_it != tris.end(); ++tri_it) {
     const Vector3f &A = verts[tri_it->vert_idxs[0]];
     const Vector3f &B = verts[tri_it->vert_idxs[1]];
@@ -106,4 +106,40 @@ bool TriMesh::intersects(const Vector3f &start, const Vector3f &end) const {
       return true;
   }
   return false;
+}
+
+void TriMesh::Transform(const Matrix4x4f &m) {
+  for(Vector3f &v3: verts) {
+    Vector4f v4 = Vector4f{v3.x, v3.y, v3.z, 1};
+    v4 = m * v4;
+    v3 = v4.divideByW();
+  }
+}
+
+void TriMesh::Merge(const TriMesh &src) {
+  size_t original_verts_size   = verts.size();
+  size_t original_normals_size = normals.size();
+  size_t original_uvs_size     = uvs.size();
+  size_t original_tris_size    = tris.size();
+
+  verts  .reserve(original_verts_size   + src.verts  .size());
+  normals.reserve(original_normals_size + src.normals.size());
+  uvs    .reserve(original_uvs_size     + src.uvs    .size());
+  tris   .reserve(original_tris_size    + src.tris   .size());
+
+  verts  .insert(verts  .end(), src.verts  .begin(), src.verts  .end());
+  normals.insert(normals.end(), src.normals.begin(), src.normals.end());
+  uvs    .insert(uvs    .end(), src.uvs    .begin(), src.uvs    .end());
+
+  for(const Tri &tri: src.tris) {
+    Tri offset_tri = tri;
+    for(int i = 0; i < 3; i++) {
+      offset_tri.vert_idxs[i] += original_verts_size;
+      if(offset_tri.normal_idxs[i] != -1)
+        offset_tri.normal_idxs[i] += original_normals_size;
+      if(offset_tri.uv_idxs[i] != -1)
+        offset_tri.uv_idxs[i] += original_uvs_size;
+    }
+    tris.push_back(offset_tri);
+  }
 }

@@ -52,6 +52,8 @@ length of a single voxel: X = (x_max_ - x_min_) / x_size_.
 class VoxelVolume {
 public:
   VoxelVolume(int x_size, int y_size, int z_size);
+  VoxelVolume(const VoxelVolume &original);
+  VoxelVolume(VoxelVolume &&moved);
 
   int size() { return x_size_ * y_size_ * z_size_; };
 
@@ -73,14 +75,16 @@ public:
   // get the position of the center of the voxel at the given x,y,z address
   Vector3f CenterOf(int x, int y, int z);
 
+  bool IsEmpty() const;
+
   void Fill(char value);
   void SweepX();
   void SweepY();
   void SweepZ();
 
-  VoxelVolume RotateX();
-  VoxelVolume RotateY();
-  VoxelVolume RotateZ();
+  VoxelVolume RotateX() const;
+  VoxelVolume RotateY() const;
+  VoxelVolume RotateZ() const;
 
   void Union(const VoxelVolume &v);
   void Intersect(const VoxelVolume &v);

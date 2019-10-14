@@ -1,6 +1,8 @@
 #include "vox_vol.h"
 
+#include <cassert>
 #include <cstring>
+#include <memory>
 #include <tuple>
 #include <unordered_map>
 
@@ -33,6 +35,20 @@ VoxelVolume::VoxelVolume(int x_size, int y_size, int z_size) :
   assert(z_size > 0);
 }
 
+VoxelVolume::VoxelVolume(const VoxelVolume &v) :
+  x_min_(v.x_min_), x_max_(v.x_max_),
+  y_min_(v.y_min_), y_max_(v.y_max_),
+  z_min_(v.z_min_), z_max_(v.z_max_),
+  x_size_(v.x_size_), y_size_(v.y_size_), z_size_(v.z_size_),
+  voxels_(v.voxels_)/*, packed_voxels_(v.packed_voxels_)*/ {} // TODO
+
+VoxelVolume::VoxelVolume(VoxelVolume &&v) :
+  x_min_(v.x_min_), x_max_(v.x_max_),
+  y_min_(v.y_min_), y_max_(v.y_max_),
+  z_min_(v.z_min_), z_max_(v.z_max_),
+  x_size_(v.x_size_), y_size_(v.y_size_), z_size_(v.z_size_),
+  voxels_(std::move(v.voxels_)), packed_voxels_(std::move(v.packed_voxels_)) {}
+
 const std::vector<uint64_t>& VoxelVolume::GetPacked() {
   if(packed_voxels_.empty())
     Pack();
@@ -49,6 +65,33 @@ Vector3f VoxelVolume::CenterOf(int x, int y, int z) {
     y_min_ + (y + 0.5f) * voxSizeY(),
     z_min_ + (z + 0.5f) * voxSizeZ()
   };
+}
+
+bool VoxelVolume::IsEmpty() const {
+  // reinterpret_cast<uint64_t*>(vector.data()) should work
+  static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ >= alignof(uint64_t));
+
+  // TODO: check packed_voxels_ instead, if available?
+  size_t num_bytes = voxels_.size();
+  const char *bytes = voxels_.data();
+
+  // for speed, check bytes in blocks of uint64_t at a time
+  size_t num_blocks = num_bytes / sizeof(uint64_t);
+  const uint64_t *blocks = reinterpret_cast<const uint64_t*>(bytes);
+  for(size_t i = 0; i < num_blocks; i++) {
+    if(blocks[i])
+      return false;
+  }
+
+  // check any remaining bytes that don't fill up a uint64_t
+  size_t num_checked_bytes = num_blocks * sizeof(uint64_t);
+  size_t num_remaining_bytes = num_bytes % sizeof(uint64_t);
+  for(size_t i = 0; i < num_remaining_bytes; i++) {
+    if(bytes[num_checked_bytes + i])
+      return false;
+  }
+
+  return true;
 }
 
 void VoxelVolume::Fill(char value) {
@@ -128,14 +171,14 @@ void VoxelVolume::SweepZ() {
   }
 }
 
-VoxelVolume VoxelVolume::RotateX() {
+VoxelVolume VoxelVolume::RotateX() const {
   assert(y_size_ == z_size_);
 
   const int y_stride = x_size_;
   const int z_stride = x_size_ * y_size_;
 
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  char *voxel = voxels_.data();
+  const char *voxel = voxels_.data();
   for(int z = 0; z < z_size_; z++) {
     char *rotated_voxel = &rotated.at(0, y_size_ - 1 - z, 0);
     for(int y = 0; y < y_size_; y++) {
@@ -147,13 +190,13 @@ VoxelVolume VoxelVolume::RotateX() {
   return rotated;
 }
 
-VoxelVolume VoxelVolume::RotateY() {
+VoxelVolume VoxelVolume::RotateY() const {
   assert(x_size_ == z_size_);
 
   const int z_stride = x_size_ * y_size_;
 
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  char *voxel = voxels_.data();
+  const char *voxel = voxels_.data();
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
       char *rotated_voxel = &rotated.at(z, y, z_size_ - 1);
@@ -167,13 +210,13 @@ VoxelVolume VoxelVolume::RotateY() {
   return rotated;
 }
 
-VoxelVolume VoxelVolume::RotateZ() {
+VoxelVolume VoxelVolume::RotateZ() const {
   assert(x_size_ == y_size_);
 
   const int y_stride = x_size_;
 
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  char *voxel = voxels_.data();
+  const char *voxel = voxels_.data();
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
       char *rotated_voxel = &rotated.at(x_size_ - 1 - y, 0, z);

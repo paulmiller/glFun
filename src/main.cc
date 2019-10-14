@@ -1,4 +1,5 @@
 #include "camera_control.h"
+#include "explore_shapes.h"
 #include "gl_util.h"
 #include "gl_viewport_control.h"
 #include "image.h"
@@ -158,14 +159,15 @@ int submain() {
 
   std::string axes_str = readWholeFileOrThrow("res/axes.obj");
   WavFrObj parser;
-  parser.parseFrom(axes_str);
-  TriMesh axes_mesh = parser.getTriMesh("axes_default");
+  parser.ParseFrom(axes_str);
+  TriMesh axes_mesh = parser.GetTriMesh("axes_default");
   GLuint axes_vert_buffer_id = vertVBO(axes_mesh);
   GLuint axes_uv_buffer_id = uvVBO(axes_mesh);
   GLuint axes_norm_buffer_id = normVBO(axes_mesh);
 
   assert(checkGL());
 
+  /*
   int vox_vol_size = 100;
   VoxelVolume vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
@@ -180,6 +182,10 @@ int submain() {
   auto t1 = std::chrono::steady_clock::now();
   TriMesh vox_vol_mesh = vox_vol.CreateBlockMesh();
   auto t2 = std::chrono::steady_clock::now();
+  */
+  auto t1 = std::chrono::steady_clock::now();
+  TriMesh vox_vol_mesh = ExploreShapes();
+  auto t2 = std::chrono::steady_clock::now();
   {
     auto seconds =
       std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
@@ -191,6 +197,15 @@ int submain() {
       << tris_size << " tris, ("
       << (tris_size * sizeof(Tri) / 1024) << " KiB), "
       << seconds << " seconds\n";
+  }
+
+  {
+    WavFrObj out_obj;
+    out_obj.AddObjectFromTriMesh("shapes", vox_vol_mesh);
+    std::string out_str = out_obj.Export();
+    std::ofstream out_file("shapes.obj");
+    out_file << out_str;
+    out_file.close();
   }
 
   GLuint vox_vol_vert_buffer_id = vertVBO(vox_vol_mesh);
