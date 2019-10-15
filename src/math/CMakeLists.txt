@@ -9,6 +9,7 @@ set(test_sources
   matrix_test.cc
   matrix_factories_test.cc
   matrix_vector_product_test.cc
+  util_test.cc
   vector_test.cc
   ../catch_main.cc
 )

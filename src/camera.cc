@@ -115,8 +115,8 @@ void Camera::castPixel(int x_px, int y_px, Vector3f &near, Vector3f &far) const 
   Matrix4x4f inv = getInvTransform();
 
   // Map pixel indices to screen coordinates
-  float x = linearMap(float(x_px), -0.5f, frame_width_px_  - 0.5f, -1.0f,  1.0f);
-  float y = linearMap(float(y_px), -0.5f, frame_height_px_ - 0.5f,  1.0f, -1.0f);
+  float x = LinearMap_f(x_px, -0.5f, frame_width_px_  - 0.5f, -1.0f,  1.0f);
+  float y = LinearMap_f(y_px, -0.5f, frame_height_px_ - 0.5f,  1.0f, -1.0f);
 
   // Points defining the ray, in viewing-volume-space
   Vector3f view_near{x, y, 1};
