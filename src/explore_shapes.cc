@@ -1,5 +1,7 @@
 #include "explore_shapes.h"
 
+#include "scoped_timer.h"
+
 #include "xxhash.h"
 
 #include <cassert>
@@ -132,6 +134,9 @@ TriMesh ExploreShapes() {
   int repeats = 0;
 
   while(rounds < MaxRounds) {
+    PrintingScopedTimer round_timer(
+      std::string("ExploreShapes round ") + std::to_string(rounds));
+
     for(const auto &shape: shapes) {
       for(auto op: IterableUnaryOps) {
         std::unique_ptr<Shape> new_shape(
@@ -180,20 +185,38 @@ TriMesh ExploreShapes() {
   }
 
   std::cout << "ExploreShapes size=" << shapes.size()
-    << " rounds=" << rounds << " repeats=" << repeats << std::endl;
+    << " rounds=" << rounds << " repeats=" << repeats << '\n';
 
-  int generation_counts[MaxRounds+1] = {};
+  auto block_timer_accumulator = AccumulatingScopedTimer::MakeAccumulator();
+  auto merge_timer_accumulator = AccumulatingScopedTimer::MakeAccumulator();
   TriMesh combined_mesh;
-  Matrix4x4f mesh_offset = Identity_Matrix4x4f;
-  for(auto shape = shapes.begin(); shape != shapes.end(); ++shape) {
-    TriMesh shape_mesh = (*shape)->voxels.CreateBlockMesh();
-    int generation = (*shape)->generation;
-    assert(generation <= MaxRounds);
-    mesh_offset(0,3) = generation * 2.5;
-    mesh_offset(2,3) = generation_counts[generation]++ * 2.5;
-    shape_mesh.Transform(mesh_offset);
-    combined_mesh.Merge(shape_mesh);
+  {
+    PrintingScopedTimer mesh_timer("ExploreShapes mesh");
+
+    int generation_counts[MaxRounds+1] = {};
+    Matrix4x4f mesh_offset = Identity_Matrix4x4f;
+    for(auto shape = shapes.begin(); shape != shapes.end(); ++shape) {
+      //TriMesh shape_mesh = (*shape)->voxels.CreateBlockMesh();
+      TriMesh shape_mesh;
+      {
+        AccumulatingScopedTimer block_timer(block_timer_accumulator);
+        shape_mesh = (*shape)->voxels.CreateBlockMesh();
+      }
+      int generation = (*shape)->generation;
+      assert(generation <= MaxRounds);
+      mesh_offset(0,3) = generation * 2.5;
+      mesh_offset(2,3) = generation_counts[generation]++ * 2.5;
+      shape_mesh.Transform(mesh_offset);
+      {
+        AccumulatingScopedTimer merge_timer(merge_timer_accumulator);
+        combined_mesh.Merge(shape_mesh);
+      }
+    }
   }
+
+  std::cout
+    << "ExploreShapes CreateBlockMesh " << *block_timer_accumulator
+    << "\nExploreShapes Merge " << *merge_timer_accumulator << '\n';
 
   return combined_mesh;
 }

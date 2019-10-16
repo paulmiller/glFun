@@ -25,6 +25,7 @@ set(common_sources
   mesh_obj.cc
   mesh_obj_parser.cc
   ohno.cc
+  scoped_timer.cc
   util.cc
   vox_vol.cc
 )

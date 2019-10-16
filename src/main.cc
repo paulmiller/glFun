@@ -8,11 +8,11 @@
 #include "mesh.h"
 #include "mesh_obj.h"
 #include "ohno.h"
+#include "scoped_timer.h"
 #include "util.h"
 #include "vox_vol.h"
 
 #include <cassert>
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -179,27 +179,32 @@ int submain() {
       }
     }
   }
-  auto t1 = std::chrono::steady_clock::now();
-  TriMesh vox_vol_mesh = vox_vol.CreateBlockMesh();
-  auto t2 = std::chrono::steady_clock::now();
-  */
-  auto t1 = std::chrono::steady_clock::now();
-  TriMesh vox_vol_mesh = ExploreShapes();
-  auto t2 = std::chrono::steady_clock::now();
+
   {
-    auto seconds =
-      std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
+    PrintingScopedTimer st("CreateBlockMesh");
+    TriMesh vox_vol_mesh = vox_vol.CreateBlockMesh();
+  }
+  */
+
+  TriMesh vox_vol_mesh;
+  {
+    PrintingScopedTimer st("ExploreShapes");
+    vox_vol_mesh = ExploreShapes();
+  }
+
+  {
     size_t verts_size = vox_vol_mesh.verts.size();
     size_t tris_size = vox_vol_mesh.tris.size();
     std::cout << "vox mesh: "
       << verts_size << " verts ("
       << (verts_size * sizeof(Vector3f) / 1024) << " KiB), "
       << tris_size << " tris, ("
-      << (tris_size * sizeof(Tri) / 1024) << " KiB), "
-      << seconds << " seconds\n";
+      << (tris_size * sizeof(Tri) / 1024) << " KiB)\n";
   }
 
+  /*
   {
+    PrintingScopedTimer st("Export");
     WavFrObj out_obj;
     out_obj.AddObjectFromTriMesh("shapes", vox_vol_mesh);
     std::string out_str = out_obj.Export();
@@ -207,6 +212,7 @@ int submain() {
     out_file << out_str;
     out_file.close();
   }
+  */
 
   GLuint vox_vol_vert_buffer_id = vertVBO(vox_vol_mesh);
   GLuint vox_vol_norm_buffer_id = normVBO(vox_vol_mesh);
