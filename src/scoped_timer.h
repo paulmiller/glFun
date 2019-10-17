@@ -1,3 +1,6 @@
+#ifndef SCOPED_TIMER_H
+#define SCOPED_TIMER_H
+
 #include <chrono>
 #include <memory>
 #include <string>
@@ -56,3 +59,5 @@ public:
 private:
   std::shared_ptr<double> accumulator_;
 };
+
+#endif

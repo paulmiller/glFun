@@ -6,25 +6,6 @@
 #include <tuple>
 #include <unordered_map>
 
-namespace {
-  typedef std::tuple<int, int, int> XYZ; // identifies a voxel or vertex
-
-  class XyzHasher {
-  public:
-    size_t operator()(XYZ xyz) const {
-      constexpr int shift = std::numeric_limits<int>::digits / 3;
-
-      int x = std::get<0>(xyz);
-      int y = std::get<1>(xyz);
-      int z = std::get<2>(xyz);
-      return int_hash_(x ^ (y << shift) ^ (z << (2*shift)));
-    }
-
-  private:
-    std::hash<int> int_hash_;
-  };
-}
-
 VoxelVolume::VoxelVolume(int x_size, int y_size, int z_size) :
   x_min_(-1), x_max_(1), y_min_(-1), y_max_(1), z_min_(-1), z_max_(1),
   x_size_(x_size), y_size_(y_size), z_size_(z_size),
@@ -298,26 +279,33 @@ TriMesh VoxelVolume::CreateBlockMesh() {
   mesh.normals.push_back( UnitZ_Vector3f); constexpr int z_pos_normal = 4;
   mesh.normals.push_back(-UnitZ_Vector3f); constexpr int z_neg_normal = 5;
 
-  // map from a vertex's XYZ address within the volume to that vertex's offset
-  // within mesh.verts
-  std::unordered_map<XYZ, int, XyzHasher> vert_offsets;
+  // "vert_offsets" holds a 3D array mapping each vertex's XYZ address within
+  // the volume to that vertex's offset within mesh.verts. An offset of -1 means
+  // that vertex hasn't been created in mesh.verts. Since there are vertices
+  // surrounding every voxel, "vert_offsets" is bigger by 1 in every dimension
+  // than the grid of voxels.
+  int verts_x_size = x_size_ + 1;
+  int verts_y_size = y_size_ + 1;
+  int verts_z_size = z_size_ + 1;
+  int verts_size = verts_x_size * verts_y_size * verts_z_size;
+  auto vert_offsets = std::make_unique<int[]>(verts_size);
+  for(int i = 0; i < verts_size; i++)
+    vert_offsets[i] = -1;
 
+  // "getVert" looks up a value in "vert_offsets", creating a new vertex if
+  // there is none
   auto getVert = [=, &mesh, &vert_offsets](int x, int y, int z) -> int {
-    auto key = std::make_tuple(x, y, z);
-    auto found = vert_offsets.find(key);
-    int offset;
-    if(found == vert_offsets.end()) {
+    int i = ((z * verts_y_size) + y) * verts_x_size + x;
+    int *offset = vert_offsets.get() + i;
+    if(*offset == -1) {
       mesh.verts.push_back(Vector3f {
         x_min_ + x * voxel_x_size,
         y_min_ + y * voxel_y_size,
         z_min_ + z * voxel_z_size
       });
-      offset = mesh.verts.size() - 1;
-      vert_offsets[key] = offset;
-    } else {
-      offset = found->second;
+      *offset = mesh.verts.size() - 1;
     }
-    return offset;
+    return *offset;
   };
 
   // access voxels with pointer math because "voxels_[i]" is too slow
