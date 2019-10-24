@@ -52,7 +52,7 @@ bool checkGL() {
 }
 
 GLuint loadShader(const char *file_name, GLenum shader_type) {
-  COMPILE_ASSERT(sizeof(char) == sizeof(GLchar));
+  static_assert(sizeof(char) == sizeof(GLchar));
 
   assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
   GLuint id = glCreateShader(shader_type);
