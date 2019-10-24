@@ -21,6 +21,7 @@ set(common_sources
   image.cc
   image_hdr.cc
   image_png.cc
+  memory_usage_linux.cc
   mesh.cc
   mesh_obj.cc
   mesh_obj_parser.cc
@@ -38,6 +39,7 @@ set(main_sources
 set(test_sources
   catch_main.cc
   image_test.cc
+  util_test.cc
 )
 
 include_directories(./)
