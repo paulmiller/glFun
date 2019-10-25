@@ -1,6 +1,7 @@
 #include "explore_shapes.h"
 
 #include "scoped_timer.h"
+#include "memory_usage.h"
 
 #include "xxhash.h"
 
@@ -11,8 +12,8 @@
 
 namespace {
 
-const int VolumeSize = 64;
-const int MaxRounds = 4;
+const int VolumeSize = 32;
+const int MaxRounds = 6;
 
 enum class UnaryOp {
   SweepX,
@@ -24,14 +25,14 @@ enum class UnaryOp {
 enum class BinaryOp {
   Union,
   Intersect,
-  Subtract
+  Subtract,
 };
 
 std::vector<UnaryOp> IterableUnaryOps = {
   UnaryOp::SweepX,
   UnaryOp::RotateX,
   UnaryOp::RotateY,
-  UnaryOp::RotateZ
+  UnaryOp::RotateZ,
 };
 
 std::vector<BinaryOp> IterableBinaryOps = {
@@ -43,11 +44,7 @@ std::vector<BinaryOp> IterableBinaryOps = {
 VoxelVolume DoUnaryOp(UnaryOp op, const VoxelVolume &voxels) {
   switch(op) {
   case UnaryOp::SweepX:
-    {
-      VoxelVolume new_voxels = voxels;
-      new_voxels.SweepX();
-      return new_voxels;
-    }
+    return voxels.SweepX();
   case UnaryOp::RotateX:
     return voxels.RotateX();
   case UnaryOp::RotateY:
@@ -56,37 +53,32 @@ VoxelVolume DoUnaryOp(UnaryOp op, const VoxelVolume &voxels) {
     return voxels.RotateZ();
   default:
     assert(0);
-    return VoxelVolume(1,1,1);
+    return voxels;
   }
 }
 
 VoxelVolume DoBinaryOp(BinaryOp op, const VoxelVolume &a, const VoxelVolume &b) {
-  VoxelVolume new_voxels = a;
   switch(op) {
   case BinaryOp::Union:
-    new_voxels.Union(b);
-    break;
+    return a.Union(b);
   case BinaryOp::Intersect:
-    new_voxels.Intersect(b);
-    break;
+    return a.Intersect(b);
   case BinaryOp::Subtract:
-    new_voxels.Subtract(b);
-    break;
+    return a.Subtract(b);
   default:
     assert(0);
-    return VoxelVolume(1,1,1);
+    return a;
   }
-  return new_voxels;
 }
 
 } // namespace
 
 size_t ShapeHasher::operator()(const std::unique_ptr<Shape> &shape) const {
+  using VoxelWord = VoxelVolume::VoxelWord;
   uint64_t hash;
   if(!shape->have_hash) {
-    const std::vector<uint64_t> &packed_voxels = shape->voxels.GetPacked();
-    hash = XXH64(packed_voxels.data(),
-                 packed_voxels.size() * sizeof(uint64_t), 0);
+    const std::vector<VoxelWord> &voxels = shape->voxels.GetVoxels();
+    hash = XXH64(voxels.data(), voxels.size() * sizeof(VoxelWord), 0);
     shape->hash = hash;
     shape->have_hash = true;
   } else {
@@ -99,13 +91,14 @@ size_t ShapeComparator::operator()(
   const std::unique_ptr<Shape> &a,
   const std::unique_ptr<Shape> &b) const
 {
-  const std::vector<uint64_t> &a_packed_voxels = a->voxels.GetPacked();
-  const std::vector<uint64_t> &b_packed_voxels = b->voxels.GetPacked();
-  size_t a_size = a_packed_voxels.size();
-  assert(a_size == b_packed_voxels.size());
-  const uint64_t *a_data = a_packed_voxels.data();
-  const uint64_t *b_data = b_packed_voxels.data();
-  return memcmp(a_data, b_data, a_size * sizeof(uint64_t)) == 0;
+  using VoxelWord = VoxelVolume::VoxelWord;
+  const std::vector<VoxelWord> &a_voxels = a->voxels.GetVoxels();
+  const std::vector<VoxelWord> &b_voxels = b->voxels.GetVoxels();
+  size_t a_size = a_voxels.size();
+  assert(a_size == b_voxels.size());
+  const VoxelWord *a_data = a_voxels.data();
+  const VoxelWord *b_data = b_voxels.data();
+  return memcmp(a_data, b_data, a_size * sizeof(VoxelWord)) == 0;
 }
 
 VoxelVolume MakeSphere() {
@@ -115,7 +108,7 @@ VoxelVolume MakeSphere() {
       for(int x = 0; x < VolumeSize; x++) {
         Vector3f v = voxels.CenterOf(x, y, z);
         if(v.x * v.x + v.y * v.y + v.z * v.z <= 1)
-          voxels.at(x, y, z) = 1;
+          voxels.Set(x,y,z);
       }
     }
   }
@@ -134,8 +127,9 @@ TriMesh ExploreShapes() {
   int repeats = 0;
 
   while(rounds < MaxRounds) {
+    std::cout << "\nstart round " << rounds << '\n';
     PrintingScopedTimer round_timer(
-      std::string("ExploreShapes round ") + std::to_string(rounds));
+      std::string("end round ") + std::to_string(rounds));
 
     for(const auto &shape: shapes) {
       for(auto op: IterableUnaryOps) {
@@ -182,16 +176,25 @@ TriMesh ExploreShapes() {
       break;
     }
     rounds++;
+
+    std::cout << "size=" << shapes.size() << ", repeats=" << repeats << '\n';
+    PrintMemoryUsage();
   }
 
   std::cout << "ExploreShapes size=" << shapes.size()
     << " rounds=" << rounds << " repeats=" << repeats << '\n';
 
+  return TriMesh();
+  /*
   auto block_timer_accumulator = AccumulatingScopedTimer::MakeAccumulator();
   auto merge_timer_accumulator = AccumulatingScopedTimer::MakeAccumulator();
   TriMesh combined_mesh;
   {
     PrintingScopedTimer mesh_timer("ExploreShapes mesh");
+
+    combined_mesh.verts.reserve(100000000);
+    combined_mesh.normals.reserve(10000);
+    combined_mesh.tris.reserve(100000000);
 
     int generation_counts[MaxRounds+1] = {};
     Matrix4x4f mesh_offset = Identity_Matrix4x4f;
@@ -218,5 +221,11 @@ TriMesh ExploreShapes() {
     << "ExploreShapes CreateBlockMesh " << *block_timer_accumulator
     << "\nExploreShapes Merge " << *merge_timer_accumulator << '\n';
 
+  std::cout << "total verts=" << combined_mesh.verts.size()
+    << " tris=" << combined_mesh.tris.size() << '\n';
+
+  PrintMemoryUsage();
+
   return combined_mesh;
+  */
 }

@@ -7,165 +7,77 @@
 #include <unordered_map>
 
 VoxelVolume::VoxelVolume(int x_size, int y_size, int z_size) :
-  x_min_(-1), x_max_(1), y_min_(-1), y_max_(1), z_min_(-1), z_max_(1),
+  x_min_(-1), y_min_(-1), z_min_(-1),
+  x_max_( 1), y_max_( 1), z_max_( 1),
   x_size_(x_size), y_size_(y_size), z_size_(z_size),
-  voxels_(x_size * y_size * z_size)
+  x_words_(x_size / VoxelsPerWord),
+  voxels_(x_size * y_size * z_size / VoxelsPerWord)
 {
   assert(x_size > 0);
+  assert(x_size % VoxelsPerWord == 0);
   assert(y_size > 0);
   assert(z_size > 0);
 }
 
-VoxelVolume::VoxelVolume(const VoxelVolume &v) :
-  x_min_(v.x_min_), x_max_(v.x_max_),
-  y_min_(v.y_min_), y_max_(v.y_max_),
-  z_min_(v.z_min_), z_max_(v.z_max_),
-  x_size_(v.x_size_), y_size_(v.y_size_), z_size_(v.z_size_),
-  voxels_(v.voxels_)/*, packed_voxels_(v.packed_voxels_)*/ {} // TODO
-
-VoxelVolume::VoxelVolume(VoxelVolume &&v) :
-  x_min_(v.x_min_), x_max_(v.x_max_),
-  y_min_(v.y_min_), y_max_(v.y_max_),
-  z_min_(v.z_min_), z_max_(v.z_max_),
-  x_size_(v.x_size_), y_size_(v.y_size_), z_size_(v.z_size_),
-  voxels_(std::move(v.voxels_)), packed_voxels_(std::move(v.packed_voxels_)) {}
-
-const std::vector<uint64_t>& VoxelVolume::GetPacked() {
-  if(packed_voxels_.empty())
-    Pack();
-  return packed_voxels_;
-}
-
-float VoxelVolume::voxSizeX() { return (x_max_ - x_min_) / x_size_; }
-float VoxelVolume::voxSizeY() { return (y_max_ - y_min_) / y_size_; }
-float VoxelVolume::voxSizeZ() { return (z_max_ - z_min_) / z_size_; }
-
-Vector3f VoxelVolume::CenterOf(int x, int y, int z) {
+Vector3f VoxelVolume::CenterOf(int x, int y, int z) const {
   return Vector3f {
-    x_min_ + (x + 0.5f) * voxSizeX(),
-    y_min_ + (y + 0.5f) * voxSizeY(),
-    z_min_ + (z + 0.5f) * voxSizeZ()
+    x_min_ + (x + 0.5f) * VoxXSize(),
+    y_min_ + (y + 0.5f) * VoxYSize(),
+    z_min_ + (z + 0.5f) * VoxZSize()
   };
 }
 
 bool VoxelVolume::IsEmpty() const {
-  // reinterpret_cast<uint64_t*>(vector.data()) should work
-  static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ >= alignof(uint64_t));
-
-  // TODO: check packed_voxels_ instead, if available?
-  size_t num_bytes = voxels_.size();
-  const char *bytes = voxels_.data();
-
-  // for speed, check bytes in blocks of uint64_t at a time
-  size_t num_blocks = num_bytes / sizeof(uint64_t);
-  const uint64_t *blocks = reinterpret_cast<const uint64_t*>(bytes);
-  for(size_t i = 0; i < num_blocks; i++) {
-    if(blocks[i])
+  size_t size = voxels_.size();
+  const VoxelWord *data = voxels_.data();
+  for(size_t i = 0; i < size; i++) {
+    if(data[i])
       return false;
   }
-
-  // check any remaining bytes that don't fill up a uint64_t
-  size_t num_checked_bytes = num_blocks * sizeof(uint64_t);
-  size_t num_remaining_bytes = num_bytes % sizeof(uint64_t);
-  for(size_t i = 0; i < num_remaining_bytes; i++) {
-    if(bytes[num_checked_bytes + i])
-      return false;
-  }
-
   return true;
 }
 
-void VoxelVolume::Fill(char value) {
-  memset(voxels_.data(), value, voxels_.size() * sizeof(char));
-}
+VoxelVolume VoxelVolume::SweepX() const {
+  const int y_stride = x_words_;
 
-void VoxelVolume::SweepX() {
-  const int y_stride = x_size_;
-  char *start_voxel = voxels_.data();
+  VoxelVolume swept(x_size_, y_size_, z_size_);
+  VoxelWord *dest_row = swept.voxels_.data();
+  const VoxelWord *source_row = voxels_.data();
+
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
-      char *voxel = start_voxel;
-      for(int x = 0; x < x_size_; x++) {
-        if(*voxel) {
-          memset(start_voxel, 1, x_size_ * sizeof(char));
+      const VoxelWord *word = source_row;
+      for(int x = 0; x < x_words_; x++) {
+        if(*word) {
+          memset(dest_row, 0xff, x_words_ * sizeof(VoxelWord));
           break;
         }
-        voxel++;
+        word++;
       }
-      start_voxel += y_stride;
+      dest_row += y_stride;
+      source_row += y_stride;
     }
   }
-}
 
-void VoxelVolume::SweepY() {
-  const int y_stride = x_size_;
-  const int z_stride = x_size_ * y_size_;
-  char *start_voxel = voxels_.data();
-  for(int z = 0; z < z_size_; z++) {
-    for(int x = 0; x < x_size_; x++) {
-      bool found_nonzero = false;
-      char *voxel = start_voxel;
-      for(int y = 0; y < y_size_; y++) {
-        if(*voxel) {
-          found_nonzero = true;
-          break;
-        }
-        voxel += y_stride;
-      }
-      if(found_nonzero) {
-        voxel = start_voxel;
-        for(int z = 0; z < z_size_; z++) {
-          *voxel = 1;
-          voxel += y_stride;
-        }
-      }
-      start_voxel++;
-    }
-    // start_voxel is now at (x,y+1,z); reset it to (x,y,z+1)
-    start_voxel += z_stride - y_stride;
-  }
-}
-
-void VoxelVolume::SweepZ() {
-  const int z_stride = x_size_ * y_size_;
-  char *start_voxel = voxels_.data();
-  for(int y = 0; y < y_size_; y++) {
-    for(int x = 0; x < x_size_; x++) {
-      bool found_nonzero = false;
-      char *voxel = start_voxel;
-      for(int z = 0; z < z_size_; z++) {
-        if(*voxel) {
-          found_nonzero = true;
-          break;
-        }
-        voxel += z_stride;
-      }
-      if(found_nonzero) {
-        voxel = start_voxel;
-        for(int z = 0; z < z_size_; z++) {
-          *voxel = 1;
-          voxel += z_stride;
-        }
-      }
-      start_voxel++;
-    }
-  }
+  return swept;
 }
 
 VoxelVolume VoxelVolume::RotateX() const {
   assert(y_size_ == z_size_);
 
-  const int y_stride = x_size_;
-  const int z_stride = x_size_ * y_size_;
+  const int y_stride = x_words_;
+  const int z_stride = x_words_ * y_size_;
 
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  const char *voxel = voxels_.data();
+  VoxelWord *dest_data = rotated.voxels_.data();
+  const VoxelWord *source_row = voxels_.data();
+
   for(int z = 0; z < z_size_; z++) {
-    char *rotated_voxel = &rotated.at(0, y_size_ - 1 - z, 0);
+    VoxelWord *dest_row = dest_data + (y_size_ - 1 - z) * y_stride;
     for(int y = 0; y < y_size_; y++) {
-      memcpy(rotated_voxel, voxel, x_size_ * sizeof(char));
-      voxel += y_stride;
-      rotated_voxel += z_stride;
+      memcpy(dest_row, source_row, x_words_ * sizeof(VoxelWord));
+      dest_row += z_stride;
+      source_row += y_stride;
     }
   }
   return rotated;
@@ -174,17 +86,12 @@ VoxelVolume VoxelVolume::RotateX() const {
 VoxelVolume VoxelVolume::RotateY() const {
   assert(x_size_ == z_size_);
 
-  const int z_stride = x_size_ * y_size_;
-
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  const char *voxel = voxels_.data();
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
-      char *rotated_voxel = &rotated.at(z, y, z_size_ - 1);
       for(int x = 0; x < x_size_; x++) {
-        *rotated_voxel = *voxel;
-        voxel++;
-        rotated_voxel -= z_stride;
+        if(Get(x,y,z))
+          rotated.Set(z, y, z_size_ - 1 - x);
       }
     }
   }
@@ -194,81 +101,89 @@ VoxelVolume VoxelVolume::RotateY() const {
 VoxelVolume VoxelVolume::RotateZ() const {
   assert(x_size_ == y_size_);
 
-  const int y_stride = x_size_;
-
   VoxelVolume rotated(x_size_, y_size_, z_size_);
-  const char *voxel = voxels_.data();
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
-      char *rotated_voxel = &rotated.at(x_size_ - 1 - y, 0, z);
       for(int x = 0; x < x_size_; x++) {
-        *rotated_voxel = *voxel;
-        voxel++;
-        rotated_voxel += y_stride;
+        if(Get(x,y,z))
+          rotated.Set(x_size_ - 1 - y, x, z);
       }
     }
   }
   return rotated;
 }
 
-void VoxelVolume::Union(const VoxelVolume &o) {
-  assert(x_size_ == o.x_size_);
-  assert(y_size_ == o.y_size_);
-  assert(z_size_ == o.z_size_);
+// c = a | b
+VoxelVolume VoxelVolume::Union(const VoxelVolume &b) const {
+  assert(x_size_ == b.x_size_);
+  assert(y_size_ == b.y_size_);
+  assert(z_size_ == b.z_size_);
+
+  VoxelVolume c(x_size_, y_size_, z_size_);
+
+  const VoxelWord *a_words = voxels_.data();
+  const VoxelWord *b_words = b.voxels_.data();
+  VoxelWord *c_words = c.voxels_.data();
 
   size_t size = voxels_.size();
-  assert(size == o.voxels_.size());
+  assert(size == b.voxels_.size());
+  assert(size == c.voxels_.size());
 
-  char *voxel = voxels_.data();
-  const char *o_voxel = o.voxels_.data();
+  for(size_t i = 0; i < size; i++)
+    c_words[i] = a_words[i] | b_words[i];
 
-  for(size_t i = 0; i < size; i++) {
-    *voxel = *voxel || *o_voxel;
-    voxel++;
-    o_voxel++;
-  }
+  return c;
 }
 
-void VoxelVolume::Intersect(const VoxelVolume &o) {
-  assert(x_size_ == o.x_size_);
-  assert(y_size_ == o.y_size_);
-  assert(z_size_ == o.z_size_);
+// c = a & b
+VoxelVolume VoxelVolume::Intersect(const VoxelVolume &b) const {
+  assert(x_size_ == b.x_size_);
+  assert(y_size_ == b.y_size_);
+  assert(z_size_ == b.z_size_);
+
+  VoxelVolume c(x_size_, y_size_, z_size_);
+
+  const VoxelWord *a_words = voxels_.data();
+  const VoxelWord *b_words = b.voxels_.data();
+  VoxelWord *c_words = c.voxels_.data();
 
   size_t size = voxels_.size();
-  assert(size == o.voxels_.size());
+  assert(size == b.voxels_.size());
+  assert(size == c.voxels_.size());
 
-  char *voxel = voxels_.data();
-  const char *o_voxel = o.voxels_.data();
+  for(size_t i = 0; i < size; i++)
+    c_words[i] = a_words[i] & b_words[i];
 
-  for(size_t i = 0; i < size; i++) {
-    *voxel = *voxel && *o_voxel;
-    voxel++;
-    o_voxel++;
-  }
+  return c;
 }
 
-void VoxelVolume::Subtract(const VoxelVolume &o) {
-  assert(x_size_ == o.x_size_);
-  assert(y_size_ == o.y_size_);
-  assert(z_size_ == o.z_size_);
+// c = a & ~b
+VoxelVolume VoxelVolume::Subtract(const VoxelVolume &b) const {
+  assert(x_size_ == b.x_size_);
+  assert(y_size_ == b.y_size_);
+  assert(z_size_ == b.z_size_);
+
+  VoxelVolume c(x_size_, y_size_, z_size_);
+
+  const VoxelWord *a_words = voxels_.data();
+  const VoxelWord *b_words = b.voxels_.data();
+  VoxelWord *c_words = c.voxels_.data();
 
   size_t size = voxels_.size();
-  assert(size == o.voxels_.size());
+  assert(size == b.voxels_.size());
+  assert(size == c.voxels_.size());
 
-  char *voxel = voxels_.data();
-  const char *o_voxel = o.voxels_.data();
+  for(size_t i = 0; i < size; i++)
+    c_words[i] = a_words[i] & ~b_words[i];
 
-  for(size_t i = 0; i < size; i++) {
-    *voxel = *voxel && !*o_voxel;
-    voxel++;
-    o_voxel++;
-  }
+  return c;
 }
 
+// TODO
 TriMesh VoxelVolume::CreateBlockMesh() {
-  float voxel_x_size = voxSizeX();
-  float voxel_y_size = voxSizeY();
-  float voxel_z_size = voxSizeZ();
+  float voxel_x_size = VoxXSize();
+  float voxel_y_size = VoxYSize();
+  float voxel_z_size = VoxZSize();
 
   TriMesh mesh;
   mesh.normals.reserve(6);
@@ -296,6 +211,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
   // there is none
   auto getVert = [=, &mesh, &vert_offsets](int x, int y, int z) -> int {
     int i = ((z * verts_y_size) + y) * verts_x_size + x;
+    assert(i < verts_size);
     int *offset = vert_offsets.get() + i;
     if(*offset == -1) {
       mesh.verts.push_back(Vector3f {
@@ -308,21 +224,11 @@ TriMesh VoxelVolume::CreateBlockMesh() {
     return *offset;
   };
 
-  // access voxels with pointer math because "voxels_[i]" is too slow
-  char *voxel = voxels_.data();
-
-  // If voxel[i] is the voxel at (x,y,z), then voxel[i+x_stride] is the voxel at
-  // (x+1,y,z); voxel[i-x_stride] is at (x-1,y,z); voxel[i+y_stride] is at
-  // (x,y+1,z); etc. This finds neighboring voxels faster than calling at().
-  const int x_stride = 1;
-  const int y_stride = x_size_;
-  const int z_stride = x_size_ * y_size_;
-
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
       for(int x = 0; x < x_size_; x++) {
-        if(*voxel) {
-          if(x == 0 || !voxel[-x_stride]) {
+        if(Get(x,y,z)) {
+          if(x == 0 || !Get(x-1,y,z)) {
             // create x_neg face
             int a = getVert(x, y, z);
             int b = getVert(x, y, z+1);
@@ -338,7 +244,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
 
-          if(x == x_size_-1 || !voxel[x_stride]) {
+          if(x == x_size_-1 || !Get(x+1,y,z)) {
             // create x_pos face
             int a = getVert(x+1, y, z);
             int b = getVert(x+1, y+1, z);
@@ -354,7 +260,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
 
-          if(y == 0 || !voxel[-y_stride]) {
+          if(y == 0 || !Get(x,y-1,z)) {
             // create y_neg face
             int a = getVert(x, y, z);
             int b = getVert(x+1, y, z);
@@ -370,7 +276,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
 
-          if(y == y_size_-1 || !voxel[y_stride]) {
+          if(y == y_size_-1 || !Get(x,y+1,z)) {
             // create y_pos face
             int a = getVert(x, y+1, z);
             int b = getVert(x, y+1, z+1);
@@ -386,7 +292,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
 
-          if(z == 0 || !voxel[-z_stride]) {
+          if(z == 0 || !Get(x,y,z-1)) {
             // create z_neg face
             int a = getVert(x, y, z);
             int b = getVert(x, y+1, z);
@@ -402,7 +308,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
 
-          if(z == z_size_-1 || !voxel[z_stride]) {
+          if(z == z_size_-1 || !Get(x,y,z+1)) {
             // create z_pos face
             int a = getVert(x, y, z+1);
             int b = getVert(x+1, y, z+1);
@@ -418,8 +324,6 @@ TriMesh VoxelVolume::CreateBlockMesh() {
               -1, -1, -1);
           }
         }
-
-        voxel++;
       }
     }
   }
@@ -427,30 +331,19 @@ TriMesh VoxelVolume::CreateBlockMesh() {
   return mesh;
 }
 
-void VoxelVolume::Pack() {
-  assert(packed_voxels_.empty()); // meant to be called only once
-
-  size_t size = voxels_.size();
-  size_t full_words = size / 64;
-  size_t remainder = size % 64;
-
-  packed_voxels_.reserve(full_words + bool(remainder));
-
-  char *voxel = voxels_.data();
-
-  for(size_t i = 0; i < full_words; i++) {
-    uint64_t packed_bits = 0;
-    for(uint64_t j = 0; j < 64; j++) {
-      packed_bits |= uint64_t(*voxel) << j;
-      voxel++;
+std::ostream& operator<<(std::ostream &out, const VoxelVolume &v) {
+  const int z_size = v.XSize(), y_size = v.YSize(), x_size = v.XSize();
+  out << "VoxelVolume(" << x_size << ',' << y_size << ',' << z_size << ")\n";
+  for(int z = 0; z < z_size; z++) {
+    out << "  z=" << z << '\n';
+    for(int y = 0; y < y_size; y++) {
+      out << "    ";
+      for(int x = 0; x < x_size; x++) {
+        if(x) out << ' ';
+        out << (v.Get(x,y,z) ? 'X' : '-');
+      }
+      out << '\n';
     }
-    packed_voxels_.push_back(packed_bits);
   }
-
-  uint64_t packed_bits = 0;
-  for(uint64_t j = 0; j < remainder; j++) {
-    packed_bits |= uint64_t(*voxel) << j;
-    voxel++;
-  }
-  packed_voxels_.push_back(packed_bits);
+  return out;
 }

@@ -168,21 +168,25 @@ int submain() {
   assert(checkGL());
 
   /*
-  int vox_vol_size = 100;
+  int vox_vol_size = 64;
   VoxelVolume vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
   for(int z = 0; z < vox_vol_size; z++) {
     for(int y = 0; y < vox_vol_size; y++) {
       for(int x = 0; x < vox_vol_size; x++) {
-        Vector3f v = vox_vol.CenterOf(x, y, z);
-        if(pow(v.x,12) + pow(v.y,12) + pow(v.z,12) < 1.0f)
-          vox_vol.at(x, y, z) = 1;
+        Vector3f v = vox_vol.CenterOf(x,y,z);
+        if(pow(v.x,4) + pow(v.y,4) + pow(v.z,4) < 1.0f)
+          vox_vol.Set(x,y,z);
       }
     }
   }
+  vox_vol = vox_vol.SweepX();
+  vox_vol = vox_vol.RotateZ();
+  //std::cout << vox_vol;
 
+  TriMesh vox_vol_mesh;
   {
     PrintingScopedTimer st("CreateBlockMesh");
-    TriMesh vox_vol_mesh = vox_vol.CreateBlockMesh();
+    vox_vol_mesh = vox_vol.CreateBlockMesh();
   }
   */
 

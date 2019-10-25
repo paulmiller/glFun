@@ -1,10 +1,12 @@
 #ifndef VOX_VOL_H
 #define VOX_VOL_H
 
+#include "math/util.h"
 #include "math/vector.h"
 #include "mesh.h"
 
 #include <cassert>
+#include <ostream>
 
 /*
 A volume of boolean voxels
@@ -48,57 +50,86 @@ The opposite vertex (x_size_, y_size_, z_size_) is at (x_max_, y_max_, z_max_).
 
 The vertex (1,0,0) is at (x_min_ + X, y_min_, z_min_), where X is the x-axis
 length of a single voxel: X = (x_max_ - x_min_) / x_size_.
+
+The voxels are packed into VoxelWords, 1 bit per voxel. To simplify the math,
+x_size_ must be a multiple of the number of bits per VoxelWord. That way, each
+row of x_size_ voxels fits neatly into a whole number of VoxelWords.
+
+Suppose VoxelWord = uint8_t. Then VoxelsPerWord = 8; BitIndexBits = 3;
+BitIndexMask = 0b111. voxels_[0] contains voxels 0-7; voxels_[1] contains
+voxels 8-15; etc. Suppose we want voxel 20. 20 = 0b10100. The 3 least
+significant bits, 0b100, select a bit within a given uint8_t word. The other
+bits, 0b10, select a word within voxels_. So to get voxel 20, we do
+(voxels_[20 >> BitIndexBits] >> (20 & BitIndexMask)) & 1.
 */
 class VoxelVolume {
 public:
-  VoxelVolume(int x_size, int y_size, int z_size);
-  VoxelVolume(const VoxelVolume &original);
-  VoxelVolume(VoxelVolume &&moved);
+  using VoxelWord = uint32_t;
+  static constexpr int VoxelsPerWord = std::numeric_limits<VoxelWord>::digits;
+  static constexpr int BitIndexBits = Log<2>(VoxelsPerWord);
+  static constexpr VoxelWord BitIndexMask = VoxelsPerWord - 1;
 
-  int size() { return x_size_ * y_size_ * z_size_; };
+  VoxelVolume(int x_size, int y_size, int z_size);
+
+  int XSize() const { return x_size_; }
+  int YSize() const { return y_size_; }
+  int ZSize() const { return z_size_; }
 
   // get the voxel at the given x,y,z address
-  std::vector<char>::reference at(int x, int y, int z) {
-    assert(x >= 0); assert(x < x_size_);
-    assert(y >= 0); assert(y < y_size_);
-    assert(z >= 0); assert(z < z_size_);
-    return voxels_[(z * y_size_ + y) * x_size_ + x];
+  bool Get(int x, int y, int z) const {
+    int index = VoxelIndex(x, y, z);
+    return (voxels_[index >> BitIndexBits] >> (index & BitIndexMask)) & 1;
   }
 
-  const std::vector<uint64_t>& GetPacked();
+  // set a voxel to 1
+  void Set(int x, int y, int z) {
+    int index = VoxelIndex(x, y, z);
+    VoxelWord &word = voxels_[index >> BitIndexBits];
+    VoxelWord bit = VoxelWord(1) << (index & BitIndexMask);
+    word = (word & ~bit) | bit;
+  }
 
   // dimensions of an individual voxel
-  float voxSizeX();
-  float voxSizeY();
-  float voxSizeZ();
+  float VoxXSize() const { return (x_max_ - x_min_) / x_size_; }
+  float VoxYSize() const { return (y_max_ - y_min_) / y_size_; }
+  float VoxZSize() const { return (z_max_ - z_min_) / z_size_; }
 
   // get the position of the center of the voxel at the given x,y,z address
-  Vector3f CenterOf(int x, int y, int z);
+  Vector3f CenterOf(int x, int y, int z) const;
 
   bool IsEmpty() const;
 
-  void Fill(char value);
-  void SweepX();
-  void SweepY();
-  void SweepZ();
+  const std::vector<VoxelWord>& GetVoxels() { return voxels_; }
 
-  VoxelVolume RotateX() const;
+  VoxelVolume SweepX() const;
+
+  VoxelVolume RotateX() const; // quarter rotation around X-axis
   VoxelVolume RotateY() const;
   VoxelVolume RotateZ() const;
 
-  void Union(const VoxelVolume &v);
-  void Intersect(const VoxelVolume &v);
-  void Subtract(const VoxelVolume &v);
+  VoxelVolume Union(const VoxelVolume&) const;
+  VoxelVolume Intersect(const VoxelVolume&) const;
+  VoxelVolume Subtract(const VoxelVolume&) const;
 
   TriMesh CreateBlockMesh();
 
 private:
-  void Pack();
+  int VoxelIndex(int x, int y, int z) const {
+    assert(x >= 0); assert(x < x_size_);
+    assert(y >= 0); assert(y < y_size_);
+    assert(z >= 0); assert(z < z_size_);
+    return (z * y_size_ + y) * x_size_ + x;
+  }
 
-  float x_min_, x_max_, y_min_, y_max_, z_min_, z_max_; // volume boundaries
+  float x_min_, y_min_, z_min_, x_max_, y_max_, z_max_; // volume boundaries
   int x_size_, y_size_, z_size_; // number of voxels
-  std::vector<char> voxels_; // voxels, in z-major order
-  std::vector<uint64_t> packed_voxels_; // vector<bool> doesn't support data()
+  int x_words_; // size in VoxelWords of each row of x_size_ voxels
+
+  // voxels, in z-major order. 1 voxel = 1 bit. not using vector<bool> because
+  // it doesn't support data()
+  std::vector<VoxelWord> voxels_;
 };
+
+std::ostream& operator<<(std::ostream&, const VoxelVolume&);
 
 #endif
