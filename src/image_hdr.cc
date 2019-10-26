@@ -11,7 +11,8 @@
 
 /* example to convert HDR to PNG:
 
-  std::ifstream test_hdr_input("probes/uffizi_probe.hdr", std::ifstream::binary);
+  std::ifstream test_hdr_input(
+    "probes/uffizi_probe.hdr", std::ifstream::binary);
   Image testHdr;
   try {
     testHdr = read_hdr(test_hdr_input);
@@ -29,9 +30,12 @@
       dst->R = float(src->R) * pow(2.0f, float(src->E) - 100);
       dst->G = float(src->G) * pow(2.0f, float(src->E) - 100);
       dst->B = float(src->B) * pow(2.0f, float(src->E) - 100);
-      if(std::isfinite(dst->R)) { max=std::max(max,dst->R); min=std::min(min,dst->R); }
-      if(std::isfinite(dst->G)) { max=std::max(max,dst->G); min=std::min(min,dst->G); }
-      if(std::isfinite(dst->B)) { max=std::max(max,dst->B); min=std::min(min,dst->B); }
+      if(std::isfinite(dst->R)) {
+        max=std::max(max,dst->R); min=std::min(min,dst->R); }
+      if(std::isfinite(dst->G)) {
+        max=std::max(max,dst->G); min=std::min(min,dst->G); }
+      if(std::isfinite(dst->B)) {
+        max=std::max(max,dst->B); min=std::min(min,dst->B); }
     }
   }
   std::cout << "min=" << min << " max=" << max << '\n';
@@ -55,7 +59,6 @@
   }
   std::ofstream test_out("test.png", std::ifstream::binary);
   writePng(test_out, test_png);
-
 */
 
 namespace {
@@ -225,7 +228,8 @@ Image read_hdr(std::istream &input) {
       // the resolution line marks the end of the header
       break;
     } else {
-      std::cout << "unrecognized HDR header line: \"" << line << '"' << std::endl;
+      std::cout << "unrecognized HDR header line: \""
+        << line << '"' << std::endl;
     }
   }
   if(format == NONE)

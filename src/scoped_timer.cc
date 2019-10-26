@@ -7,8 +7,9 @@ ScopedTimer::ScopedTimer() {
 }
 
 double ScopedTimer::GetElapsedSeconds() {
-  auto now = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::duration<double>>(now - start_).count();
+  using namespace std::chrono;
+  auto now = steady_clock::now();
+  return duration_cast<duration<double>>(now - start_).count();
 }
 
 PrintingScopedTimer::PrintingScopedTimer(std::string msg)

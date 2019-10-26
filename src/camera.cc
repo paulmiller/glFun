@@ -71,7 +71,9 @@ void Camera::setFrustum(
   }};
 }
 
-void Camera::look(const Vector3f &eye, const Vector3f &forward, const Vector3f &up) {
+void Camera::look(
+  const Vector3f &eye, const Vector3f &forward, const Vector3f &up
+) {
   // Camera-space basis vectors
   Vector3f b = -forward.unit(); // backwards
   Vector3f r = cross(up, b).unit(); // right
@@ -99,7 +101,9 @@ void Camera::look(const Vector3f &eye, const Vector3f &forward, const Vector3f &
   }};
 }
 
-void Camera::lookAt(const Vector3f &eye, const Vector3f &target, const Vector3f &up) {
+void Camera::lookAt(
+  const Vector3f &eye, const Vector3f &target, const Vector3f &up
+) {
   look(eye, target - eye, up);
 }
 
@@ -111,7 +115,9 @@ Matrix4x4f Camera::getInvTransform() const {
   return view_inverse_ * proj_inverse_;
 }
 
-void Camera::castPixel(int x_px, int y_px, Vector3f &near, Vector3f &far) const {
+void Camera::castPixel(
+  int x_px, int y_px, Vector3f &near, Vector3f &far
+) const {
   Matrix4x4f inv = getInvTransform();
 
   // Map pixel indices to screen coordinates

@@ -11,7 +11,8 @@ private:
 public:
   Camera();
   void setResolution(int width_px, int height_px);
-  void setFrustum(float near_clip, float far_clip, float horiz_fov, float aspect);
+  void setFrustum(
+    float near_clip, float far_clip, float horiz_fov, float aspect);
   void look(const Vector3f &eye, const Vector3f &forward, const Vector3f &up);
   void lookAt(const Vector3f &eye, const Vector3f &target, const Vector3f &up);
   // Get the matrix which transforms points from world-space into

@@ -57,7 +57,9 @@ BoolVoxelVolume DoUnaryOp(UnaryOp op, const BoolVoxelVolume &voxels) {
   }
 }
 
-BoolVoxelVolume DoBinaryOp(BinaryOp op, const BoolVoxelVolume &a, const BoolVoxelVolume &b) {
+BoolVoxelVolume DoBinaryOp(
+  BinaryOp op, const BoolVoxelVolume &a, const BoolVoxelVolume &b
+) {
   switch(op) {
   case BinaryOp::Union:
     return a.Union(b);

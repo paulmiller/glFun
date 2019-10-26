@@ -89,7 +89,8 @@ void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
     Vector3f near, far;
     camera_ptr->castPixel(int(xpos), int(ypos), near, far);
     std::cout << "cast near=" << near << " far=" << far << std::endl;
-    std::cout << "hit=" << widget_ptr->intersects(near, far - near) << std::endl;
+    std::cout << "hit=" << widget_ptr->intersects(near, far - near)
+      << std::endl;
   }
 }
 */
@@ -302,7 +303,8 @@ int submain() {
     else if(turning_right && !turning_left)
       camera_obj.rot *= Quat::rotation(UnitY_Vector3f, -0.03);
 
-    Vector3f forward = (Matrix4x4f::rotation(camera_obj.rot) * -Vector4f::UNIT_Z).dropW();
+    Vector3f forward =
+      (Matrix4x4f::rotation(camera_obj.rot) * -Vector4f::UNIT_Z).dropW();
     camera.look(camera_obj.pos, forward, UnitY_Vector3f);
     */
 
