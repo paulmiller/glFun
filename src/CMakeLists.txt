@@ -13,6 +13,7 @@ add_custom_command(
 )
 
 set(common_sources
+  bool_voxel_volume.cc
   camera.cc
   camera_control.cc
   gl_util.cc
@@ -28,7 +29,6 @@ set(common_sources
   ohno.cc
   scoped_timer.cc
   util.cc
-  vox_vol.cc
 )
 
 set(main_sources

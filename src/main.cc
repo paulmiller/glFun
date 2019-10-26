@@ -10,7 +10,7 @@
 #include "ohno.h"
 #include "scoped_timer.h"
 #include "util.h"
-#include "vox_vol.h"
+#include "bool_voxel_volume.h"
 
 #include <cassert>
 #include <fstream>
@@ -168,37 +168,37 @@ int submain() {
   assert(checkGL());
 
   /*
-  int vox_vol_size = 64;
-  VoxelVolume vox_vol(vox_vol_size, vox_vol_size, vox_vol_size); 
-  for(int z = 0; z < vox_vol_size; z++) {
-    for(int y = 0; y < vox_vol_size; y++) {
-      for(int x = 0; x < vox_vol_size; x++) {
-        Vector3f v = vox_vol.CenterOf(x,y,z);
+  int volume_size = 64;
+  BoolVoxelVolume bool_voxel_volume(volume_size, volume_size, volume_size);
+  for(int z = 0; z < volume_size; z++) {
+    for(int y = 0; y < volume_size; y++) {
+      for(int x = 0; x < volume_size; x++) {
+        Vector3f v = bool_voxel_volume.CenterOf(x,y,z);
         if(pow(v.x,4) + pow(v.y,4) + pow(v.z,4) < 1.0f)
-          vox_vol.Set(x,y,z);
+          bool_voxel_volume.Set(x,y,z);
       }
     }
   }
-  vox_vol = vox_vol.SweepX();
-  vox_vol = vox_vol.RotateZ();
-  //std::cout << vox_vol;
+  bool_voxel_volume = bool_voxel_volume.SweepX();
+  bool_voxel_volume = bool_voxel_volume.RotateZ();
+  //std::cout << bool_voxel_volume;
 
-  TriMesh vox_vol_mesh;
+  TriMesh bool_voxel_volume_mesh;
   {
     PrintingScopedTimer st("CreateBlockMesh");
-    vox_vol_mesh = vox_vol.CreateBlockMesh();
+    bool_voxel_volume_mesh = bool_voxel_volume.CreateBlockMesh();
   }
   */
 
-  TriMesh vox_vol_mesh;
+  TriMesh bool_voxel_volume_mesh;
   {
     PrintingScopedTimer st("ExploreShapes");
-    vox_vol_mesh = ExploreShapes();
+    bool_voxel_volume_mesh = ExploreShapes();
   }
 
   {
-    size_t verts_size = vox_vol_mesh.verts.size();
-    size_t tris_size = vox_vol_mesh.tris.size();
+    size_t verts_size = bool_voxel_volume_mesh.verts.size();
+    size_t tris_size = bool_voxel_volume_mesh.tris.size();
     std::cout << "vox mesh: "
       << verts_size << " verts ("
       << (verts_size * sizeof(Vector3f) / 1024) << " KiB), "
@@ -210,7 +210,7 @@ int submain() {
   {
     PrintingScopedTimer st("Export");
     WavFrObj out_obj;
-    out_obj.AddObjectFromTriMesh("shapes", vox_vol_mesh);
+    out_obj.AddObjectFromTriMesh("shapes", bool_voxel_volume_mesh);
     std::string out_str = out_obj.Export();
     std::ofstream out_file("shapes.obj");
     out_file << out_str;
@@ -218,8 +218,8 @@ int submain() {
   }
   */
 
-  GLuint vox_vol_vert_buffer_id = vertVBO(vox_vol_mesh);
-  GLuint vox_vol_norm_buffer_id = normVBO(vox_vol_mesh);
+  GLuint bool_voxel_volume_vert_buffer_id = vertVBO(bool_voxel_volume_mesh);
+  GLuint bool_voxel_volume_norm_buffer_id = normVBO(bool_voxel_volume_mesh);
 
   assert(checkGL());
 
@@ -372,7 +372,7 @@ int submain() {
 
     assert(checkGL());
 
-    // draw vox_vol
+    // draw bool_voxel_volume
 
     glUseProgram(norm_program_id);
 
@@ -381,7 +381,7 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vox_vol_vert_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, bool_voxel_volume_vert_buffer_id);
     glVertexAttribPointer(
       0,        // index (attribute)
       3,        // size
@@ -394,7 +394,7 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, vox_vol_norm_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, bool_voxel_volume_norm_buffer_id);
     glVertexAttribPointer(
       1,        // index (attribute)
       3,        // size
@@ -406,7 +406,7 @@ int submain() {
 
     assert(checkGL());
 
-    glDrawArrays(GL_TRIANGLES, 0, vox_vol_mesh.tris.size() * 3);
+    glDrawArrays(GL_TRIANGLES, 0, bool_voxel_volume_mesh.tris.size() * 3);
 
     assert(checkGL());
 
@@ -424,8 +424,8 @@ int submain() {
   }
 
   glDeleteProgram(norm_program_id);
-  glDeleteBuffers(1, &vox_vol_vert_buffer_id);
-  glDeleteBuffers(1, &vox_vol_norm_buffer_id);
+  glDeleteBuffers(1, &bool_voxel_volume_vert_buffer_id);
+  glDeleteBuffers(1, &bool_voxel_volume_norm_buffer_id);
 
   glDeleteProgram(norm_tex_program_id);
   glDeleteBuffers(1, &axes_vert_buffer_id);

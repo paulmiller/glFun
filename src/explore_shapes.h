@@ -2,7 +2,7 @@
 #define EXPLORE_SHAPES_H
 
 #include "mesh.h"
-#include "vox_vol.h"
+#include "bool_voxel_volume.h"
 
 #include <memory>
 #include <unordered_set>
@@ -19,9 +19,9 @@ public:
   }
   */
 
-  Shape(VoxelVolume &&voxels, int generation) :
+  Shape(BoolVoxelVolume &&voxels, int generation) :
     voxels(voxels), hash(0), have_hash(false), generation(generation) {}
-  VoxelVolume voxels;
+  BoolVoxelVolume voxels;
   uint64_t hash;
   bool have_hash;
   int generation;

@@ -1,4 +1,4 @@
-#include "vox_vol.h"
+#include "bool_voxel_volume.h"
 
 #include <cassert>
 #include <cstring>
@@ -6,7 +6,7 @@
 #include <tuple>
 #include <unordered_map>
 
-VoxelVolume::VoxelVolume(int x_size, int y_size, int z_size) :
+BoolVoxelVolume::BoolVoxelVolume(int x_size, int y_size, int z_size) :
   x_min_(-1), y_min_(-1), z_min_(-1),
   x_max_( 1), y_max_( 1), z_max_( 1),
   x_size_(x_size), y_size_(y_size), z_size_(z_size),
@@ -19,7 +19,7 @@ VoxelVolume::VoxelVolume(int x_size, int y_size, int z_size) :
   assert(z_size > 0);
 }
 
-Vector3f VoxelVolume::CenterOf(int x, int y, int z) const {
+Vector3f BoolVoxelVolume::CenterOf(int x, int y, int z) const {
   return Vector3f {
     x_min_ + (x + 0.5f) * VoxXSize(),
     y_min_ + (y + 0.5f) * VoxYSize(),
@@ -27,7 +27,7 @@ Vector3f VoxelVolume::CenterOf(int x, int y, int z) const {
   };
 }
 
-bool VoxelVolume::IsEmpty() const {
+bool BoolVoxelVolume::IsEmpty() const {
   size_t size = voxels_.size();
   const VoxelWord *data = voxels_.data();
   for(size_t i = 0; i < size; i++) {
@@ -37,10 +37,10 @@ bool VoxelVolume::IsEmpty() const {
   return true;
 }
 
-VoxelVolume VoxelVolume::SweepX() const {
+BoolVoxelVolume BoolVoxelVolume::SweepX() const {
   const int y_stride = x_words_;
 
-  VoxelVolume swept(x_size_, y_size_, z_size_);
+  BoolVoxelVolume swept(x_size_, y_size_, z_size_);
   VoxelWord *dest_row = swept.voxels_.data();
   const VoxelWord *source_row = voxels_.data();
 
@@ -62,13 +62,13 @@ VoxelVolume VoxelVolume::SweepX() const {
   return swept;
 }
 
-VoxelVolume VoxelVolume::RotateX() const {
+BoolVoxelVolume BoolVoxelVolume::RotateX() const {
   assert(y_size_ == z_size_);
 
   const int y_stride = x_words_;
   const int z_stride = x_words_ * y_size_;
 
-  VoxelVolume rotated(x_size_, y_size_, z_size_);
+  BoolVoxelVolume rotated(x_size_, y_size_, z_size_);
   VoxelWord *dest_data = rotated.voxels_.data();
   const VoxelWord *source_row = voxels_.data();
 
@@ -83,10 +83,10 @@ VoxelVolume VoxelVolume::RotateX() const {
   return rotated;
 }
 
-VoxelVolume VoxelVolume::RotateY() const {
+BoolVoxelVolume BoolVoxelVolume::RotateY() const {
   assert(x_size_ == z_size_);
 
-  VoxelVolume rotated(x_size_, y_size_, z_size_);
+  BoolVoxelVolume rotated(x_size_, y_size_, z_size_);
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
       for(int x = 0; x < x_size_; x++) {
@@ -98,10 +98,10 @@ VoxelVolume VoxelVolume::RotateY() const {
   return rotated;
 }
 
-VoxelVolume VoxelVolume::RotateZ() const {
+BoolVoxelVolume BoolVoxelVolume::RotateZ() const {
   assert(x_size_ == y_size_);
 
-  VoxelVolume rotated(x_size_, y_size_, z_size_);
+  BoolVoxelVolume rotated(x_size_, y_size_, z_size_);
   for(int z = 0; z < z_size_; z++) {
     for(int y = 0; y < y_size_; y++) {
       for(int x = 0; x < x_size_; x++) {
@@ -114,12 +114,12 @@ VoxelVolume VoxelVolume::RotateZ() const {
 }
 
 // c = a | b
-VoxelVolume VoxelVolume::Union(const VoxelVolume &b) const {
+BoolVoxelVolume BoolVoxelVolume::Union(const BoolVoxelVolume &b) const {
   assert(x_size_ == b.x_size_);
   assert(y_size_ == b.y_size_);
   assert(z_size_ == b.z_size_);
 
-  VoxelVolume c(x_size_, y_size_, z_size_);
+  BoolVoxelVolume c(x_size_, y_size_, z_size_);
 
   const VoxelWord *a_words = voxels_.data();
   const VoxelWord *b_words = b.voxels_.data();
@@ -136,12 +136,12 @@ VoxelVolume VoxelVolume::Union(const VoxelVolume &b) const {
 }
 
 // c = a & b
-VoxelVolume VoxelVolume::Intersect(const VoxelVolume &b) const {
+BoolVoxelVolume BoolVoxelVolume::Intersect(const BoolVoxelVolume &b) const {
   assert(x_size_ == b.x_size_);
   assert(y_size_ == b.y_size_);
   assert(z_size_ == b.z_size_);
 
-  VoxelVolume c(x_size_, y_size_, z_size_);
+  BoolVoxelVolume c(x_size_, y_size_, z_size_);
 
   const VoxelWord *a_words = voxels_.data();
   const VoxelWord *b_words = b.voxels_.data();
@@ -158,12 +158,12 @@ VoxelVolume VoxelVolume::Intersect(const VoxelVolume &b) const {
 }
 
 // c = a & ~b
-VoxelVolume VoxelVolume::Subtract(const VoxelVolume &b) const {
+BoolVoxelVolume BoolVoxelVolume::Subtract(const BoolVoxelVolume &b) const {
   assert(x_size_ == b.x_size_);
   assert(y_size_ == b.y_size_);
   assert(z_size_ == b.z_size_);
 
-  VoxelVolume c(x_size_, y_size_, z_size_);
+  BoolVoxelVolume c(x_size_, y_size_, z_size_);
 
   const VoxelWord *a_words = voxels_.data();
   const VoxelWord *b_words = b.voxels_.data();
@@ -180,7 +180,7 @@ VoxelVolume VoxelVolume::Subtract(const VoxelVolume &b) const {
 }
 
 // TODO
-TriMesh VoxelVolume::CreateBlockMesh() {
+TriMesh BoolVoxelVolume::CreateBlockMesh() {
   float voxel_x_size = VoxXSize();
   float voxel_y_size = VoxYSize();
   float voxel_z_size = VoxZSize();
@@ -331,9 +331,10 @@ TriMesh VoxelVolume::CreateBlockMesh() {
   return mesh;
 }
 
-std::ostream& operator<<(std::ostream &out, const VoxelVolume &v) {
+std::ostream& operator<<(std::ostream &out, const BoolVoxelVolume &v) {
   const int z_size = v.XSize(), y_size = v.YSize(), x_size = v.XSize();
-  out << "VoxelVolume(" << x_size << ',' << y_size << ',' << z_size << ")\n";
+  out << "BoolVoxelVolume("
+    << x_size << ',' << y_size << ',' << z_size << ")\n";
   for(int z = 0; z < z_size; z++) {
     out << "  z=" << z << '\n';
     for(int y = 0; y < y_size; y++) {

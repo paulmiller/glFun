@@ -41,7 +41,7 @@ std::vector<BinaryOp> IterableBinaryOps = {
   BinaryOp::Subtract
 };
 
-VoxelVolume DoUnaryOp(UnaryOp op, const VoxelVolume &voxels) {
+BoolVoxelVolume DoUnaryOp(UnaryOp op, const BoolVoxelVolume &voxels) {
   switch(op) {
   case UnaryOp::SweepX:
     return voxels.SweepX();
@@ -57,7 +57,7 @@ VoxelVolume DoUnaryOp(UnaryOp op, const VoxelVolume &voxels) {
   }
 }
 
-VoxelVolume DoBinaryOp(BinaryOp op, const VoxelVolume &a, const VoxelVolume &b) {
+BoolVoxelVolume DoBinaryOp(BinaryOp op, const BoolVoxelVolume &a, const BoolVoxelVolume &b) {
   switch(op) {
   case BinaryOp::Union:
     return a.Union(b);
@@ -74,7 +74,7 @@ VoxelVolume DoBinaryOp(BinaryOp op, const VoxelVolume &a, const VoxelVolume &b) 
 } // namespace
 
 size_t ShapeHasher::operator()(const std::unique_ptr<Shape> &shape) const {
-  using VoxelWord = VoxelVolume::VoxelWord;
+  using VoxelWord = BoolVoxelVolume::VoxelWord;
   uint64_t hash;
   if(!shape->have_hash) {
     const std::vector<VoxelWord> &voxels = shape->voxels.GetVoxels();
@@ -91,7 +91,7 @@ size_t ShapeComparator::operator()(
   const std::unique_ptr<Shape> &a,
   const std::unique_ptr<Shape> &b) const
 {
-  using VoxelWord = VoxelVolume::VoxelWord;
+  using VoxelWord = BoolVoxelVolume::VoxelWord;
   const std::vector<VoxelWord> &a_voxels = a->voxels.GetVoxels();
   const std::vector<VoxelWord> &b_voxels = b->voxels.GetVoxels();
   size_t a_size = a_voxels.size();
@@ -101,8 +101,8 @@ size_t ShapeComparator::operator()(
   return memcmp(a_data, b_data, a_size * sizeof(VoxelWord)) == 0;
 }
 
-VoxelVolume MakeSphere() {
-  VoxelVolume voxels(VolumeSize, VolumeSize, VolumeSize);
+BoolVoxelVolume MakeSphere() {
+  BoolVoxelVolume voxels(VolumeSize, VolumeSize, VolumeSize);
   for(int z = 0; z < VolumeSize; z++) {
     for(int y = 0; y < VolumeSize; y++) {
       for(int x = 0; x < VolumeSize; x++) {
