@@ -50,5 +50,5 @@ TEST_CASE("PrettyPrintNumBytes") {
   REQUIRE(PrettyPrintNumBytes(G - 512*K + 1) == "1 GiB");
 
   constexpr T Max = std::numeric_limits<T>::max();
-  REQUIRE(std::regex_match(PrettyPrintNumBytes(Max), std::regex("\\d+ EiB")));
+  REQUIRE(std::regex_match(PrettyPrintNumBytes(Max), std::regex("\\d+ [A-Z]iB")));
 }
