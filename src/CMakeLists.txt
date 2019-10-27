@@ -16,6 +16,7 @@ set(common_sources
   bool_voxel_volume.cc
   camera.cc
   camera_control.cc
+  color.cc
   gl_util.cc
   gl_viewport_control.cc
   glfw_window.cc
@@ -29,6 +30,7 @@ set(common_sources
   ohno.cc
   scoped_timer.cc
   util.cc
+  voxel_volume.cc
 )
 
 set(main_sources
