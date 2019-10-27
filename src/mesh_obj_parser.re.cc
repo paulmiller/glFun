@@ -146,7 +146,8 @@ void WavFrObj::ParseFrom(const std::string& input) {
       face_verts.reserve(tags->size());
       for(const char* str: tags) {
         unsigned long v, t;
-        assert(2 == sscanf(str, "%lu/%lu", &v, &t)); // Parse a v/t pair.
+        int status = sscanf(str, "%lu/%lu", &v, &t); // Parse a v/t pair.
+        assert(status == 2);
         if(v == 0 || v > INT_MAX ||
            t == 0 || t > INT_MAX) {
           std::cout << badFaceMsg << getOffset() << std::endl;
@@ -168,7 +169,8 @@ void WavFrObj::ParseFrom(const std::string& input) {
       face_verts.reserve(tags->size());
       for(const char* str: tags) {
         unsigned long v, n;
-        assert(2 == sscanf(str, "%zu//%zu", &v, &n)); // Parse a v//n pair.
+        int status = sscanf(str, "%zu//%zu", &v, &n); // Parse a v//n pair.
+        assert(status == 2);
         if(v == 0 || v > INT_MAX ||
            n == 0 || n > INT_MAX) {
           std::cout << badFaceMsg << getOffset() << std::endl;
@@ -191,7 +193,8 @@ void WavFrObj::ParseFrom(const std::string& input) {
       for(const char* str: tags) {
         unsigned long v, t, n;
         // Parse a v/t/n triple.
-        assert(3 == sscanf(str, "%zu/%zu/%zu", &v, &t, &n));
+        int status = sscanf(str, "%lu/%lu/%lu", &v, &t, &n);
+        assert(status == 3);
         if(v == 0 || v > INT_MAX ||
            t == 0 || t > INT_MAX ||
            n == 0 || n > INT_MAX) {
