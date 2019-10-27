@@ -27,6 +27,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
   float voxel_z_size = VoxelZSize();
 
   TriMesh mesh;
+
+  mesh.has_color = true;
+
   mesh.normals.reserve(6);
   mesh.normals.push_back( UnitX_Vector3f); constexpr int x_pos_normal = 0;
   mesh.normals.push_back(-UnitX_Vector3f); constexpr int x_neg_normal = 1;
@@ -69,7 +72,7 @@ TriMesh VoxelVolume::CreateBlockMesh() {
     for(int y = 0; y < y_size_; y++) {
       for(int x = 0; x < x_size_; x++) {
         if(GetBool(x,y,z)) {
-          Color c = GetColor(x,y,z); // TODO apply color
+          Color color = GetColor(x,y,z);
 
           if(x == 0 || !GetBool(x-1,y,z)) {
             // create x_neg face
@@ -78,13 +81,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x, y+1, z);
             int d = getVert(x, y+1, z+1);
             mesh.tris.emplace_back(
-              a, b, c,
-              x_neg_normal, x_neg_normal, x_neg_normal,
-              -1, -1, -1);
+              a, b, c, x_neg_normal, x_neg_normal, x_neg_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              x_neg_normal, x_neg_normal, x_neg_normal,
-              -1, -1, -1);
+              b, d, c, x_neg_normal, x_neg_normal, x_neg_normal, color);
           }
 
           if(x == x_size_-1 || !GetBool(x+1,y,z)) {
@@ -94,13 +93,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x+1, y, z+1);
             int d = getVert(x+1, y+1, z+1);
             mesh.tris.emplace_back(
-              a, b, c,
-              x_pos_normal, x_pos_normal, x_pos_normal,
-              -1, -1, -1);
+              a, b, c, x_pos_normal, x_pos_normal, x_pos_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              x_pos_normal, x_pos_normal, x_pos_normal,
-              -1, -1, -1);
+              b, d, c, x_pos_normal, x_pos_normal, x_pos_normal, color);
           }
 
           if(y == 0 || !GetBool(x,y-1,z)) {
@@ -110,13 +105,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x, y, z+1);
             int d = getVert(x+1, y, z+1);
             mesh.tris.emplace_back(
-              a, b, c,
-              y_neg_normal, y_neg_normal, y_neg_normal,
-              -1, -1, -1);
+              a, b, c, y_neg_normal, y_neg_normal, y_neg_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              y_neg_normal, y_neg_normal, y_neg_normal,
-              -1, -1, -1);
+              b, d, c, y_neg_normal, y_neg_normal, y_neg_normal, color);
           }
 
           if(y == y_size_-1 || !GetBool(x,y+1,z)) {
@@ -126,13 +117,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x+1, y+1, z);
             int d = getVert(x+1, y+1, z+1);
             mesh.tris.emplace_back(
-              a, b, c,
-              y_pos_normal, y_pos_normal, y_pos_normal,
-              -1, -1, -1);
+              a, b, c, y_pos_normal, y_pos_normal, y_pos_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              y_pos_normal, y_pos_normal, y_pos_normal,
-              -1, -1, -1);
+              b, d, c, y_pos_normal, y_pos_normal, y_pos_normal, color);
           }
 
           if(z == 0 || !GetBool(x,y,z-1)) {
@@ -142,13 +129,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x+1, y, z);
             int d = getVert(x+1, y+1, z);
             mesh.tris.emplace_back(
-              a, b, c,
-              z_neg_normal, z_neg_normal, z_neg_normal,
-              -1, -1, -1);
+              a, b, c, z_neg_normal, z_neg_normal, z_neg_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              z_neg_normal, z_neg_normal, z_neg_normal,
-              -1, -1, -1);
+              b, d, c, z_neg_normal, z_neg_normal, z_neg_normal, color);
           }
 
           if(z == z_size_-1 || !GetBool(x,y,z+1)) {
@@ -158,13 +141,9 @@ TriMesh VoxelVolume::CreateBlockMesh() {
             int c = getVert(x, y+1, z+1);
             int d = getVert(x+1, y+1, z+1);
             mesh.tris.emplace_back(
-              a, b, c,
-              z_pos_normal, z_pos_normal, z_pos_normal,
-              -1, -1, -1);
+              a, b, c, z_pos_normal, z_pos_normal, z_pos_normal, color);
             mesh.tris.emplace_back(
-              b, d, c,
-              z_pos_normal, z_pos_normal, z_pos_normal,
-              -1, -1, -1);
+              b, d, c, z_pos_normal, z_pos_normal, z_pos_normal, color);
           }
         }
       }

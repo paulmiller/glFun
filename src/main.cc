@@ -10,7 +10,7 @@
 #include "ohno.h"
 #include "scoped_timer.h"
 #include "util.h"
-#include "bool_voxel_volume.h"
+#include "voxel_volume.h"
 
 #include <cassert>
 #include <fstream>
@@ -150,7 +150,7 @@ int submain() {
   GLenum glew_error = glGetError();
   assert(glew_error == GL_NO_ERROR || glew_error == GL_INVALID_ENUM);
 
-  GLuint color = pngTex("res/axes.png");
+  GLuint axes_texture = pngTex("res/axes.png");
 
   assert(checkGL());
 
@@ -168,38 +168,38 @@ int submain() {
 
   assert(checkGL());
 
-  /*
   int volume_size = 64;
-  BoolVoxelVolume bool_voxel_volume(volume_size, volume_size, volume_size);
+  BoolVoxelVolume voxel_volume(volume_size, volume_size, volume_size);
   for(int z = 0; z < volume_size; z++) {
     for(int y = 0; y < volume_size; y++) {
       for(int x = 0; x < volume_size; x++) {
-        Vector3f v = bool_voxel_volume.CenterOf(x,y,z);
+        Vector3f v = voxel_volume.CenterOf(x,y,z);
         if(pow(v.x,4) + pow(v.y,4) + pow(v.z,4) < 1.0f)
-          bool_voxel_volume.Set(x,y,z);
+          voxel_volume.Set(x,y,z);
       }
     }
   }
-  bool_voxel_volume = bool_voxel_volume.SweepX();
-  bool_voxel_volume = bool_voxel_volume.RotateZ();
-  //std::cout << bool_voxel_volume;
+  voxel_volume = voxel_volume.SweepX();
+  voxel_volume = voxel_volume.RotateZ();
+  //std::cout << voxel_volume;
 
-  TriMesh bool_voxel_volume_mesh;
+  TriMesh voxel_volume_mesh;
   {
     PrintingScopedTimer st("CreateBlockMesh");
-    bool_voxel_volume_mesh = bool_voxel_volume.CreateBlockMesh();
+    voxel_volume_mesh = voxel_volume.CreateBlockMesh();
+  }
+
+  /*
+  TriMesh voxel_volume_mesh;
+  {
+    PrintingScopedTimer st("ExploreShapes");
+    voxel_volume_mesh = ExploreShapes();
   }
   */
 
-  TriMesh bool_voxel_volume_mesh;
   {
-    PrintingScopedTimer st("ExploreShapes");
-    bool_voxel_volume_mesh = ExploreShapes();
-  }
-
-  {
-    size_t verts_size = bool_voxel_volume_mesh.verts.size();
-    size_t tris_size = bool_voxel_volume_mesh.tris.size();
+    size_t verts_size = voxel_volume_mesh.verts.size();
+    size_t tris_size = voxel_volume_mesh.tris.size();
     std::cout << "vox mesh: "
       << verts_size << " verts ("
       << (verts_size * sizeof(Vector3f) / 1024) << " KiB), "
@@ -211,7 +211,7 @@ int submain() {
   {
     PrintingScopedTimer st("Export");
     WavFrObj out_obj;
-    out_obj.AddObjectFromTriMesh("shapes", bool_voxel_volume_mesh);
+    out_obj.AddObjectFromTriMesh("shapes", voxel_volume_mesh);
     std::string out_str = out_obj.Export();
     std::ofstream out_file("shapes.obj");
     out_file << out_str;
@@ -219,23 +219,24 @@ int submain() {
   }
   */
 
-  GLuint bool_voxel_volume_vert_buffer_id = vertVBO(bool_voxel_volume_mesh);
-  GLuint bool_voxel_volume_norm_buffer_id = normVBO(bool_voxel_volume_mesh);
+  GLuint voxel_volume_vert_buffer_id = vertVBO(voxel_volume_mesh);
+  GLuint voxel_volume_norm_buffer_id = normVBO(voxel_volume_mesh);
+  GLuint voxel_volume_color_buffer_id = colorVBO(voxel_volume_mesh);
 
   assert(checkGL());
 
   GLuint norm_vert_shader_id =
-    loadShader("src/norm_vert.glsl", GL_VERTEX_SHADER);
+    loadShader("src/norm_color_vert.glsl", GL_VERTEX_SHADER);
   GLuint norm_frag_shader_id =
-    loadShader("src/norm_frag.glsl", GL_FRAGMENT_SHADER);
-  GLuint norm_program_id =
+    loadShader("src/norm_color_frag.glsl", GL_FRAGMENT_SHADER);
+  GLuint norm_color_program_id =
     linkProgram(norm_vert_shader_id, norm_frag_shader_id);
   glDeleteShader(norm_vert_shader_id);
   glDeleteShader(norm_frag_shader_id);
 
   assert(checkGL());
 
-  GLuint norm_program_mvp_id = glGetUniformLocation(norm_program_id, "mvp");
+  GLuint norm_program_mvp_id = glGetUniformLocation(norm_color_program_id, "mvp");
 
   assert(checkGL());
 
@@ -253,7 +254,7 @@ int submain() {
   GLuint norm_tex_program_mvp_id =
     glGetUniformLocation(norm_tex_program_id, "mvp");
   GLuint norm_tex_program_sampler_id =
-    glGetUniformLocation(norm_program_id, "sampler");
+    glGetUniformLocation(norm_color_program_id, "sampler");
 
   assert(checkGL());
 
@@ -320,7 +321,7 @@ int submain() {
     assert(checkGL());
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, color);
+    glBindTexture(GL_TEXTURE_2D, axes_texture);
     glUniform1i(norm_tex_program_sampler_id, 0);
 
     assert(checkGL());
@@ -374,16 +375,16 @@ int submain() {
 
     assert(checkGL());
 
-    // draw bool_voxel_volume
+    // draw voxel_volume
 
-    glUseProgram(norm_program_id);
+    glUseProgram(norm_color_program_id);
 
     UniformMatrix(norm_program_mvp_id, camera_control.getCam()->getTransform());
 
     assert(checkGL());
 
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, bool_voxel_volume_vert_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_vert_buffer_id);
     glVertexAttribPointer(
       0,        // index (attribute)
       3,        // size
@@ -396,7 +397,7 @@ int submain() {
     assert(checkGL());
 
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, bool_voxel_volume_norm_buffer_id);
+    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_norm_buffer_id);
     glVertexAttribPointer(
       1,        // index (attribute)
       3,        // size
@@ -406,12 +407,24 @@ int submain() {
       (void*)0  // pointer (buffer offset)
     );
 
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_color_buffer_id);
+    glVertexAttribPointer(
+      2,        // index (attribute)
+      3,        // size
+      GL_UNSIGNED_BYTE, // type
+      GL_TRUE,  // normalized
+      0,        // stride
+      (void*)0  // pointer (buffer offset)
+    );
+
     assert(checkGL());
 
-    glDrawArrays(GL_TRIANGLES, 0, bool_voxel_volume_mesh.tris.size() * 3);
+    glDrawArrays(GL_TRIANGLES, 0, voxel_volume_mesh.tris.size() * 3);
 
     assert(checkGL());
 
+    glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
 
@@ -425,15 +438,16 @@ int submain() {
     frame++;
   }
 
-  glDeleteProgram(norm_program_id);
-  glDeleteBuffers(1, &bool_voxel_volume_vert_buffer_id);
-  glDeleteBuffers(1, &bool_voxel_volume_norm_buffer_id);
+  glDeleteProgram(norm_color_program_id);
+  glDeleteBuffers(1, &voxel_volume_vert_buffer_id);
+  glDeleteBuffers(1, &voxel_volume_norm_buffer_id);
+  glDeleteBuffers(1, &voxel_volume_color_buffer_id);
 
   glDeleteProgram(norm_tex_program_id);
   glDeleteBuffers(1, &axes_vert_buffer_id);
   glDeleteBuffers(1, &axes_uv_buffer_id);
   glDeleteBuffers(1, &axes_norm_buffer_id);
-  glDeleteTextures(1, &color);
+  glDeleteTextures(1, &axes_texture);
 
   glDeleteVertexArrays(1, &array_id);
 

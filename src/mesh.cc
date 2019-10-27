@@ -10,8 +10,7 @@ UvCoord::UvCoord(float u, float v) : u(u), v(v) {}
 
 Tri::Tri(int v1, int v2, int v3) :
   vert_idxs{v1, v2, v3},
-  normal_idxs{-1, -1, -1},
-  uv_idxs{-1, -1, -1}
+  normal_idxs{-1, -1, -1}
 {}
 
 Tri::Tri(
@@ -22,6 +21,16 @@ Tri::Tri(
   vert_idxs{v1, v2, v3},
   normal_idxs{n1, n2, n3},
   uv_idxs{t1, t2, t3}
+{}
+
+Tri::Tri(
+  int v1, int v2, int v3,
+  int n1, int n2, int n3,
+  Color c
+) :
+  vert_idxs{v1, v2, v3},
+  normal_idxs{n1, n2, n3},
+  color(c)
 {}
 
 Tri::Tri(int (&v)[3], int (&n)[3], int (&t)[3]) {
@@ -117,19 +126,23 @@ void TriMesh::Transform(const Matrix4x4f &m) {
 }
 
 void TriMesh::Merge(const TriMesh &src) {
+  assert(has_color == src.has_color);
+
   size_t original_verts_size   = verts.size();
   size_t original_normals_size = normals.size();
   size_t original_uvs_size     = uvs.size();
   size_t original_tris_size    = tris.size();
 
-  verts  .reserve(original_verts_size   + src.verts  .size());
+  verts.reserve(original_verts_size + src.verts.size());
   normals.reserve(original_normals_size + src.normals.size());
-  uvs    .reserve(original_uvs_size     + src.uvs    .size());
-  tris   .reserve(original_tris_size    + src.tris   .size());
+  if(!has_color)
+    uvs.reserve(original_uvs_size + src.uvs.size());
+  tris.reserve(original_tris_size + src.tris.size());
 
-  verts  .insert(verts  .end(), src.verts  .begin(), src.verts  .end());
+  verts.insert(verts.end(), src.verts.begin(), src.verts.end());
   normals.insert(normals.end(), src.normals.begin(), src.normals.end());
-  uvs    .insert(uvs    .end(), src.uvs    .begin(), src.uvs    .end());
+  if(!has_color)
+    uvs.insert(uvs.end(), src.uvs.begin(), src.uvs.end());
 
   for(const Tri &tri: src.tris) {
     Tri offset_tri = tri;
@@ -137,8 +150,10 @@ void TriMesh::Merge(const TriMesh &src) {
       offset_tri.vert_idxs[i] += original_verts_size;
       if(offset_tri.normal_idxs[i] != -1)
         offset_tri.normal_idxs[i] += original_normals_size;
-      if(offset_tri.uv_idxs[i] != -1)
-        offset_tri.uv_idxs[i] += original_uvs_size;
+      if(!has_color) {
+        if(offset_tri.uv_idxs[i] != -1)
+          offset_tri.uv_idxs[i] += original_uvs_size;
+      }
     }
     tris.push_back(offset_tri);
   }

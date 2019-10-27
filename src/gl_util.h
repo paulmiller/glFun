@@ -20,6 +20,7 @@ void UniformMatrix(GLint location, const Matrix4x4f &m);
 GLuint vertVBO(const TriMesh &m);
 GLuint uvVBO(const TriMesh &m);
 GLuint normVBO(const TriMesh &m);
+GLuint colorVBO(const TriMesh &m);
 
 // turn a png file into a GL texture
 GLuint pngTex(const char *png_name);

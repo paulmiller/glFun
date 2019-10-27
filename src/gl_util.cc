@@ -118,6 +118,7 @@ GLuint vertVBO(const TriMesh &m) {
       vbo[b++] = v.z;
     }
   }
+  assert(b == float_num);
 
   GLuint vert_buffer_id;
   glGenBuffers(1, &vert_buffer_id);
@@ -141,6 +142,7 @@ GLuint uvVBO(const TriMesh &m) {
       vbo[b++] = v.v;
     }
   }
+  assert(b == float_num);
 
   GLuint uv_buffer_id;
   glGenBuffers(1, &uv_buffer_id);
@@ -165,6 +167,7 @@ GLuint normVBO(const TriMesh &m) {
       vbo[b++] = n.z;
     }
   }
+  assert(b == float_num);
 
   GLuint norm_buffer_id;
   glGenBuffers(1, &norm_buffer_id);
@@ -173,6 +176,34 @@ GLuint normVBO(const TriMesh &m) {
     GL_STATIC_DRAW);
 
   return norm_buffer_id;
+}
+
+GLuint colorVBO(const TriMesh &m) {
+  // 3 verts per tri, 3 bytes per color
+  int byte_num = m.tris.size() * 3 * 3;
+  std::unique_ptr<GLubyte[]> vbo(new GLubyte[byte_num]);
+
+  int i = 0;
+  for(auto it = m.tris.begin(); it != m.tris.end(); it++) {
+    const Color &c = it->color;
+    GLubyte r = GLubyte(c.RByte());
+    GLubyte g = GLubyte(c.GByte());
+    GLubyte b = GLubyte(c.BByte());
+    for(int j = 0; j < 3; j++) {
+      vbo[i++] = r;
+      vbo[i++] = g;
+      vbo[i++] = b;
+    }
+  }
+  assert(i == byte_num);
+
+  GLuint color_buffer_id;
+  glGenBuffers(1, &color_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, color_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, byte_num * sizeof(GLubyte), vbo.get(),
+    GL_STATIC_DRAW);
+
+  return color_buffer_id;
 }
 
 namespace {
