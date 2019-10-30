@@ -53,7 +53,7 @@ The vertex (1,0,0) is at (x_min_ + VoxelXSize(), y_min_, z_min_).
 class VoxelVolume {
 public:
   VoxelVolume(int x_size, int y_size, int z_size);
-  ~VoxelVolume() {}
+  virtual ~VoxelVolume() {}
 
   // number of voxels
   int XSize() const { return x_size_; }

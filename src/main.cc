@@ -1,3 +1,4 @@
+#include "bool_voxel_volume.h"
 #include "camera_control.h"
 #include "explore_shapes.h"
 #include "gl_util.h"
@@ -5,12 +6,12 @@
 #include "image.h"
 #include "image_hdr.h"
 #include "image_png.h"
+#include "labeled_voxel_volume.h"
 #include "mesh.h"
 #include "mesh_obj.h"
 #include "ohno.h"
 #include "scoped_timer.h"
 #include "util.h"
-#include "voxel_volume.h"
 
 #include <cassert>
 #include <fstream>
@@ -168,7 +169,8 @@ int submain() {
 
   assert(checkGL());
 
-  int volume_size = 64;
+  int volume_size = 128;
+  /*
   BoolVoxelVolume voxel_volume(volume_size, volume_size, volume_size);
   for(int z = 0; z < volume_size; z++) {
     for(int y = 0; y < volume_size; y++) {
@@ -181,7 +183,26 @@ int submain() {
   }
   voxel_volume = voxel_volume.SweepX();
   voxel_volume = voxel_volume.RotateZ();
-  //std::cout << voxel_volume;
+  */
+
+  LabeledVoxelVolume voxel_volume(volume_size, volume_size, volume_size);
+  float r2 = pow(1.0f / 3.0f, 2.0f);
+  for(int z = 0; z < volume_size; z++) {
+    for(int y = 0; y < volume_size; y++) {
+      for(int x = 0; x < volume_size; x++) {
+        //voxel_volume.Set(x,y,z, short(1+x+y*8+z*64));
+        //voxel_volume.Set(x,y,z, x%3+1);
+        Vector3f v = voxel_volume.CenterOf(x,y,z);
+        //bool inside = pow(v.x,2) + pow(v.y,2) < r2;
+        bool inside = pow(v.x,2) + pow(v.y,2) + pow(v.z,2) < r2;
+        voxel_volume.Set(x,y,z, inside);
+      }
+    }
+  }
+  voxel_volume.SweepXAndMerge();
+  LabeledVoxelVolume rotate_voxel_volume = voxel_volume.RotateY();
+  voxel_volume.Merge(rotate_voxel_volume);
+  voxel_volume.SweepXAndMerge();
 
   TriMesh voxel_volume_mesh;
   {
@@ -313,6 +334,7 @@ int submain() {
 
     // draw axes
 
+    /*
     glUseProgram(norm_tex_program_id);
 
     UniformMatrix(norm_tex_program_mvp_id,
@@ -372,6 +394,7 @@ int submain() {
     glDisableVertexAttribArray(2);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
+    */
 
     assert(checkGL());
 

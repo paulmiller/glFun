@@ -23,6 +23,7 @@ set(common_sources
   image.cc
   image_hdr.cc
   image_png.cc
+  labeled_voxel_volume.cc
   memory_usage_linux.cc
   mesh.cc
   mesh_obj.cc

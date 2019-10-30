@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <ostream>
+#include <vector>
 
 /*
 A VoxelVolume where each voxel is a bool value.
@@ -36,13 +37,13 @@ public:
   // get the voxel at the given x,y,z address (prefer this non-virtual method
   // over GetBool, when possible, for performance)
   bool Get(int x, int y, int z) const {
-    int index = VoxelIndex(x, y, z);
+    int index = VoxelIndex(x,y,z);
     return (voxels_[index >> BitIndexBits] >> (index & BitIndexMask)) & 1;
   }
 
   // set a voxel to 1
   void Set(int x, int y, int z) {
-    int index = VoxelIndex(x, y, z);
+    int index = VoxelIndex(x,y,z);
     VoxelWord &word = voxels_[index >> BitIndexBits];
     VoxelWord bit = VoxelWord(1) << (index & BitIndexMask);
     word = (word & ~bit) | bit;

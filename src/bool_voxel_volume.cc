@@ -8,10 +8,7 @@ BoolVoxelVolume::BoolVoxelVolume(int x_size, int y_size, int z_size) :
   x_words_(x_size / VoxelsPerWord),
   voxels_(x_size * y_size * z_size / VoxelsPerWord)
 {
-  assert(x_size > 0);
   assert(x_size % VoxelsPerWord == 0);
-  assert(y_size > 0);
-  assert(z_size > 0);
 }
 
 bool BoolVoxelVolume::GetBool(int x, int y, int z) const /*override*/ {
