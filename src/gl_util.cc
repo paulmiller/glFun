@@ -206,6 +206,32 @@ GLuint MakeColorVbo(const TriMesh &m) {
   return color_buffer_id;
 }
 
+GLuint MakeRaysVbo(const std::vector<Ray> &rays) {
+  int float_num = rays.size() * 3 * 2;
+  std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
+
+  int i = 0;
+  for(const Ray &ray: rays) {
+    const Vector3f &start = ray.start;
+    vbo[i++] = start.x;
+    vbo[i++] = start.y;
+    vbo[i++] = start.z;
+    Vector3f end = ray.start + ray.direction;
+    vbo[i++] = end.x;
+    vbo[i++] = end.y;
+    vbo[i++] = end.z;
+  }
+  assert(i == float_num);
+
+  GLuint vert_buffer_id;
+  glGenBuffers(1, &vert_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo.get(),
+    GL_STATIC_DRAW);
+
+  return vert_buffer_id;
+}
+
 namespace {
   // https://www.opengl.org/registry/doc/glspec45.core.pdf table 8.9 pg 226
   GLuint px2glInternalFormat(Pixel::Type t) {

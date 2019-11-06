@@ -20,7 +20,7 @@ Camera *CameraControl::getCam() {
 
 void CameraControl::onFramebufferSize(int width, int height) {
   float aspect = float(width) / float(height);
-  float horiz_fov = Pi_f / 2;
+  float horiz_fov = Tau_f / 4;
   cam_.setResolution(width, height);
   cam_.setFrustum(0.1f, 100.0f, horiz_fov, aspect);
 }
@@ -52,7 +52,7 @@ double CameraControl::draggedRotation() {
 
 double CameraControl::draggedDeclination() {
   double dy = drag_end_y_ - drag_start_y_;
-  return std::clamp(declination_ + dy * drag_scale_, -Pi_d/2, Pi_d/2);
+  return std::clamp(declination_ + dy * drag_scale_, -Tau_d/4, Tau_d/4);
 }
 
 void CameraControl::updateCamPos() {

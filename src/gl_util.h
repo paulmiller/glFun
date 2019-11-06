@@ -3,6 +3,7 @@
 
 #include "math/matrix.h"
 #include "mesh.h"
+#include "ray.h"
 
 #include <GL/glew.h> // must precede gl, glfw
 #include <GLFW/glfw3.h>
@@ -23,6 +24,7 @@ GLuint MakeVertexVbo(const TriMesh &m);
 GLuint MakeUvVbo(const TriMesh &m);
 GLuint MakeNormVbo(const TriMesh &m);
 GLuint MakeColorVbo(const TriMesh &m);
+GLuint MakeRaysVbo(const std::vector<Ray> &rays);
 
 // turn a png file into a GL texture
 GLuint MakeTextureFromPng(const char *png_name);

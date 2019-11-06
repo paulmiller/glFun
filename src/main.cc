@@ -1,4 +1,5 @@
 #include "camera_control.h"
+#include "csg.h"
 #include "gl_util.h"
 #include "gl_viewport_control.h"
 #include "image.h"
@@ -6,6 +7,7 @@
 #include "mesh.h"
 #include "mesh_obj.h"
 #include "ohno.h"
+#include "ray.h"
 #include "util.h"
 
 #include <cassert>
@@ -29,28 +31,30 @@ public:
   void SetCameraControl(CameraControl *cc) { camera_control_ = cc; }
 
 protected:
-  void GenericDraw() {
+  void GenericDrawBegin() {
     glUseProgram(program_id_);
+    assert(CheckGl());
     GLuint vbo_size = vbos_.size();
     for(GLuint i = 0; i < vbo_size; i++) {
       glEnableVertexAttribArray(i);
+      assert(CheckGl());
       glBindBuffer(GL_ARRAY_BUFFER, vbos_[i].id);
+      assert(CheckGl());
       glVertexAttribPointer(i, vbos_[i].size, GL_FLOAT, GL_FALSE, 0, nullptr);
+      assert(CheckGl());
     }
     Matrix4x4f camera_transform = camera_control_->getCam()->getTransform();
     UniformMatrix(mvp_uniform_location_, camera_transform);
-
     assert(CheckGl());
+  }
 
-    glDrawArrays(draw_mode_, 0, draw_count_);
-
-    assert(CheckGl());
-
+  void GenericDrawEnd() {
     glUseProgram(0);
+    assert(CheckGl());
+    GLuint vbo_size = vbos_.size();
     for(GLuint i = 0; i < vbo_size; i++) {
-      glDisableVertexAttribArray(0);
+      glDisableVertexAttribArray(i);
     }
-
     assert(CheckGl());
   }
 
@@ -63,8 +67,6 @@ protected:
     assert(CheckGl());
   }
 
-  GLenum draw_mode_;
-  GLsizei draw_count_ = 0;
   GLuint program_id_ = 0;
   GLint mvp_uniform_location_;
   std::vector<Vbo> vbos_;
@@ -89,8 +91,6 @@ public:
     glDeleteShader(vert_shader_id);
     glDeleteShader(frag_shader_id);
 
-    draw_mode_ = GL_TRIANGLES;
-    draw_count_ = mesh.tris.size() * 3;
     program_id_ = program_id;
     mvp_uniform_location_ = glGetUniformLocation(program_id, "mvp");
 
@@ -99,6 +99,7 @@ public:
     vbos_.push_back({MakeNormVbo(mesh), 3});
     vbos_.push_back({MakeUvVbo(mesh), 2});
 
+    num_verts_ = mesh.tris.size() * 3;
     texture_id_ = MakeTextureFromPng("res/axes.png");
     sampler_uniform_location_ = glGetUniformLocation(program_id, "sampler");
 
@@ -106,23 +107,70 @@ public:
   }
 
   void Draw() override {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_id_);
-    glUniform1i(sampler_uniform_location_, 0);
+    GenericDrawBegin();
 
+    glActiveTexture(GL_TEXTURE0);
+    assert(CheckGl());
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+    assert(CheckGl());
+    glUniform1i(sampler_uniform_location_, 0);
     assert(CheckGl());
 
-    GenericDraw();
+    glDrawArrays(GL_TRIANGLES, 0, num_verts_);
+    assert(CheckGl());
+
+    GenericDrawEnd();
   }
 
   void TearDown() override {
     glDeleteTextures(1, &texture_id_);
+    assert(CheckGl());
     GenericTearDown();
   }
 
 private:
+  GLsizei num_verts_;
   GLuint texture_id_;
   GLint sampler_uniform_location_;
+};
+
+class DrawableRays : public Drawable {
+public:
+  DrawableRays(std::vector<Ray> &&rays) : rays_(std::move(rays)) {}
+
+  void SetUp() override {
+    GLuint vert_shader_id =
+      LoadShader("src/lines_vert.glsl", GL_VERTEX_SHADER);
+    GLuint frag_shader_id =
+      LoadShader("src/lines_frag.glsl", GL_FRAGMENT_SHADER);
+    GLuint program_id = LinkProgram(vert_shader_id, frag_shader_id);
+    glDeleteShader(vert_shader_id);
+    glDeleteShader(frag_shader_id);
+    program_id_ = program_id;
+    mvp_uniform_location_ = glGetUniformLocation(program_id, "mvp");
+
+    vbos_.reserve(1);
+    vbos_.push_back({MakeRaysVbo(rays_), 3});
+
+    num_verts_ = rays_.size() * 2;
+
+    assert(CheckGl());
+  }
+
+  void Draw() override {
+    GenericDrawBegin();
+    glDrawArrays(GL_LINES, 0, num_verts_);
+    assert(CheckGl());
+    GenericDrawEnd();
+  }
+
+  void TearDown() override {
+    GenericTearDown();
+  }
+
+private:
+  GLsizei num_verts_;
+  std::vector<Ray> rays_;
 };
 
 int submain();
@@ -198,6 +246,10 @@ int submain() {
   axes.SetCameraControl(&camera_control);
   axes.SetUp();
 
+  DrawableRays rays(TestIntersectRay());
+  rays.SetCameraControl(&camera_control);
+  rays.SetUp();
+
   assert(CheckGl());
 
   glEnable(GL_DEPTH_TEST);
@@ -211,7 +263,10 @@ int submain() {
   int64_t frame = 0;
   while(!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    assert(CheckGl());
     axes.Draw();
+    assert(CheckGl());
+    rays.Draw();
     assert(CheckGl());
     glfwSwapBuffers(window);
     glfwPollEvents();

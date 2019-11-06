@@ -17,6 +17,7 @@ set(common_sources
   camera.cc
   camera_control.cc
   color.cc
+  csg.cc
   gl_util.cc
   gl_viewport_control.cc
   glfw_window.cc
@@ -29,6 +30,7 @@ set(common_sources
   mesh_obj.cc
   mesh_obj_parser.cc
   ohno.cc
+  ray.cc
   scoped_timer.cc
   util.cc
   voxel_volume.cc

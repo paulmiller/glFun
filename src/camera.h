@@ -10,6 +10,10 @@ private:
 
 public:
   Camera();
+
+  int GetPxRows() const { return frame_height_px_; }
+  int GetPxCols() const { return frame_width_px_; }
+
   void setResolution(int width_px, int height_px);
   void setFrustum(
     float near_clip, float far_clip, float horiz_fov, float aspect);
