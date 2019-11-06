@@ -9,7 +9,7 @@
 #include <fstream>
 #include <vector>
 
-bool checkGL() {
+bool CheckGl() {
   bool no_errors = true;
   while(no_errors) {
     switch(glGetError()) {
@@ -51,7 +51,7 @@ bool checkGL() {
   return no_errors;
 }
 
-GLuint loadShader(const char *file_name, GLenum shader_type) {
+GLuint LoadShader(const char *file_name, GLenum shader_type) {
   static_assert(sizeof(char) == sizeof(GLchar));
 
   assert(shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER);
@@ -74,12 +74,12 @@ GLuint loadShader(const char *file_name, GLenum shader_type) {
       << log.data();
   }
 
-  assert(checkGL());
+  assert(CheckGl());
 
   return id;
 }
 
-GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
+GLuint LinkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
   GLuint program_id = glCreateProgram();
   glAttachShader(program_id, vert_shader_id);
   glAttachShader(program_id, frag_shader_id);
@@ -95,7 +95,7 @@ GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id) {
     std::cout << "failed linking program:\n" << log.data();
   }
 
-  assert(checkGL());
+  assert(CheckGl());
 
   return program_id;
 }
@@ -104,7 +104,7 @@ void UniformMatrix(GLint location, const Matrix4x4f &m) {
   glUniformMatrix4fv(location, 1, GL_TRUE, &(m.data[0][0]));
 }
 
-GLuint vertVBO(const TriMesh &m) {
+GLuint MakeVertexVbo(const TriMesh &m) {
   // 3 verts per tri, 3 floats per vert
   int float_num = m.tris.size() * 3 * 3;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
@@ -129,7 +129,7 @@ GLuint vertVBO(const TriMesh &m) {
   return vert_buffer_id;
 }
 
-GLuint uvVBO(const TriMesh &m) {
+GLuint MakeUvVbo(const TriMesh &m) {
   // 3 verts per tri, 2 floats per vert
   int float_num = m.tris.size() * 3 * 2;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
@@ -153,7 +153,7 @@ GLuint uvVBO(const TriMesh &m) {
   return uv_buffer_id;
 }
 
-GLuint normVBO(const TriMesh &m) {
+GLuint MakeNormVbo(const TriMesh &m) {
   // 3 normals per tri, 3 floats per normal
   int float_num = m.tris.size() * 3 * 3;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
@@ -178,7 +178,7 @@ GLuint normVBO(const TriMesh &m) {
   return norm_buffer_id;
 }
 
-GLuint colorVBO(const TriMesh &m) {
+GLuint MakeColorVbo(const TriMesh &m) {
   // 3 verts per tri, 3 bytes per color
   int byte_num = m.tris.size() * 3 * 3;
   std::unique_ptr<GLubyte[]> vbo(new GLubyte[byte_num]);
@@ -276,7 +276,7 @@ namespace {
   }
 }
 
-GLuint pngTex(const char *png_name) {
+GLuint MakeTextureFromPng(const char *png_name) {
   std::ifstream input(png_name, std::ifstream::binary);
   Image tex_img = readPng(input);
   Pixel::Type type = tex_img.type();
@@ -289,12 +289,12 @@ GLuint pngTex(const char *png_name) {
     GL_TEXTURE_2D,             // target
     0,                         // level
     px2glInternalFormat(type), // internalFormat
-    tex_img.width(),            // width
-    tex_img.height(),           // height
+    tex_img.width(),           // width
+    tex_img.height(),          // height
     0,                         // border
     px2glFormat(type),         // format
     px2glType(type),           // type
-    tex_img.data()              // data
+    tex_img.data()             // data
   );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

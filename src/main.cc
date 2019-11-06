@@ -1,100 +1,134 @@
-#include "bool_voxel_volume.h"
 #include "camera_control.h"
-#include "explore_shapes.h"
 #include "gl_util.h"
 #include "gl_viewport_control.h"
 #include "image.h"
-#include "image_hdr.h"
 #include "image_png.h"
-#include "labeled_voxel_volume.h"
 #include "mesh.h"
 #include "mesh_obj.h"
 #include "ohno.h"
-#include "scoped_timer.h"
 #include "util.h"
 
 #include <cassert>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <vector>
+
+class Vbo {
+public:
+  GLuint id;
+  GLint size;
+};
+
+class Drawable {
+public:
+  virtual ~Drawable() {}
+
+  virtual void SetUp() = 0;
+  virtual void Draw() = 0;
+  virtual void TearDown() = 0;
+
+  void SetCameraControl(CameraControl *cc) { camera_control_ = cc; }
+
+protected:
+  void GenericDraw() {
+    glUseProgram(program_id_);
+    GLuint vbo_size = vbos_.size();
+    for(GLuint i = 0; i < vbo_size; i++) {
+      glEnableVertexAttribArray(i);
+      glBindBuffer(GL_ARRAY_BUFFER, vbos_[i].id);
+      glVertexAttribPointer(i, vbos_[i].size, GL_FLOAT, GL_FALSE, 0, nullptr);
+    }
+    Matrix4x4f camera_transform = camera_control_->getCam()->getTransform();
+    UniformMatrix(mvp_uniform_location_, camera_transform);
+
+    assert(CheckGl());
+
+    glDrawArrays(draw_mode_, 0, draw_count_);
+
+    assert(CheckGl());
+
+    glUseProgram(0);
+    for(GLuint i = 0; i < vbo_size; i++) {
+      glDisableVertexAttribArray(0);
+    }
+
+    assert(CheckGl());
+  }
+
+  void GenericTearDown() {
+    glDeleteProgram(program_id_);
+    for(Vbo &vbo: vbos_)
+      glDeleteBuffers(1, &vbo.id);
+    vbos_.clear();
+
+    assert(CheckGl());
+  }
+
+  GLenum draw_mode_;
+  GLsizei draw_count_ = 0;
+  GLuint program_id_ = 0;
+  GLint mvp_uniform_location_;
+  std::vector<Vbo> vbos_;
+
+private:
+  CameraControl *camera_control_ = nullptr;
+};
+
+class DrawableAxes : public Drawable {
+public:
+  void SetUp() override {
+    std::string obj = readWholeFileOrThrow("res/axes.obj");
+    WavFrObj parser;
+    parser.ParseFrom(obj);
+    TriMesh mesh = parser.GetTriMesh("axes_default");
+
+    GLuint vert_shader_id =
+      LoadShader("src/norm_tex_vert.glsl", GL_VERTEX_SHADER);
+    GLuint frag_shader_id =
+      LoadShader("src/norm_tex_frag.glsl", GL_FRAGMENT_SHADER);
+    GLuint program_id = LinkProgram(vert_shader_id, frag_shader_id);
+    glDeleteShader(vert_shader_id);
+    glDeleteShader(frag_shader_id);
+
+    draw_mode_ = GL_TRIANGLES;
+    draw_count_ = mesh.tris.size() * 3;
+    program_id_ = program_id;
+    mvp_uniform_location_ = glGetUniformLocation(program_id, "mvp");
+
+    vbos_.reserve(3);
+    vbos_.push_back({MakeVertexVbo(mesh), 3});
+    vbos_.push_back({MakeNormVbo(mesh), 3});
+    vbos_.push_back({MakeUvVbo(mesh), 2});
+
+    texture_id_ = MakeTextureFromPng("res/axes.png");
+    sampler_uniform_location_ = glGetUniformLocation(program_id, "sampler");
+
+    assert(CheckGl());
+  }
+
+  void Draw() override {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+    glUniform1i(sampler_uniform_location_, 0);
+
+    assert(CheckGl());
+
+    GenericDraw();
+  }
+
+  void TearDown() override {
+    glDeleteTextures(1, &texture_id_);
+    GenericTearDown();
+  }
+
+private:
+  GLuint texture_id_;
+  GLint sampler_uniform_location_;
+};
 
 int submain();
 
 const int default_width = 512;
 const int default_height = 512;
-
-/*
-enum KeyCommand {
-  FORWARD,
-  BACKWARD,
-  STRAFE_LEFT,
-  STRAFE_RIGHT,
-  TURN_LEFT,
-  TURN_RIGHT,
-  UP,
-  DOWN,
-  ESCAPE
-};
-
-class KeyInput {
-public:
-  const KeyCommand command;
-  const int code;
-  bool pressed;
-
-  KeyInput(KeyCommand command, int code) :
-    command(command), code(code), pressed(false) {};
-};
-
-KeyInput controls[] = {
-  {FORWARD,      GLFW_KEY_COMMA},
-  {BACKWARD,     GLFW_KEY_O},
-  {STRAFE_LEFT,  GLFW_KEY_A},
-  {STRAFE_RIGHT, GLFW_KEY_E},
-  {TURN_LEFT,    GLFW_KEY_APOSTROPHE},
-  {TURN_RIGHT,   GLFW_KEY_PERIOD},
-  {UP,           GLFW_KEY_SPACE},
-  {DOWN,         GLFW_KEY_SEMICOLON},
-  {ESCAPE,       GLFW_KEY_ESCAPE}
-};
-
-const int control_num = sizeof(controls) / sizeof(KeyInput);
-
-bool getCommandState(KeyCommand command) {
-  for(int i = 0; i < control_num; i++) {
-    if(command == controls[i].command)
-      return controls[i].pressed;
-  }
-  assert(0);
-  return false;
-}
-
-void onKey(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  for(int i = 0; i < control_num; i++) {
-    if(key == controls[i].code) {
-      if(action == GLFW_PRESS)
-        controls[i].pressed = true;
-      else if(action == GLFW_RELEASE)
-        controls[i].pressed = false;
-      break;
-    }
-  }
-}
-
-void onMouseButton(GLFWwindow *window, int button, int action, int mods) {
-  if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
-    std::cout << "click x=" << xpos << " y=" << ypos << std::endl;
-    Vector3f near, far;
-    camera_ptr->castPixel(int(xpos), int(ypos), near, far);
-    std::cout << "cast near=" << near << " far=" << far << std::endl;
-    std::cout << "hit=" << widget_ptr->intersects(near, far - near)
-      << std::endl;
-  }
-}
-*/
 
 int main() {
   if(!glfwInit()) {
@@ -117,14 +151,14 @@ int main() {
 #include <cmath>
 
 int submain() {
-  assert(checkGL());
+  assert(CheckGl());
 
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  assert(checkGL());
+  assert(CheckGl());
 
   GlViewportControl viewport_control;
   CameraControl camera_control(default_width, default_height);
@@ -133,14 +167,14 @@ int submain() {
   window.addObserver(&camera_control);
   window.create(default_width, default_height, "toy");
 
-  assert(checkGL());
+  assert(CheckGl());
 
-  assert(checkGL());
+  assert(CheckGl());
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
 
-  assert(checkGL());
+  assert(CheckGl());
 
   // https://www.opengl.org/wiki/OpenGL_Loading_Library
   glewExperimental = true;
@@ -148,333 +182,48 @@ int submain() {
     std::cout << "glewInit failed" << std::endl;
     return 1;
   }
-  GLenum glew_error = glGetError();
+  #ifndef NDEBUG
+  GLenum glew_error =
+  #endif
+    glGetError();
   assert(glew_error == GL_NO_ERROR || glew_error == GL_INVALID_ENUM);
-
-  GLuint axes_texture = pngTex("res/axes.png");
-
-  assert(checkGL());
 
   GLuint array_id;
   glGenVertexArrays(1, &array_id);
   glBindVertexArray(array_id);
 
-  std::string axes_str = readWholeFileOrThrow("res/axes.obj");
-  WavFrObj parser;
-  parser.ParseFrom(axes_str);
-  TriMesh axes_mesh = parser.GetTriMesh("axes_default");
-  GLuint axes_vert_buffer_id = vertVBO(axes_mesh);
-  GLuint axes_uv_buffer_id = uvVBO(axes_mesh);
-  GLuint axes_norm_buffer_id = normVBO(axes_mesh);
+  assert(CheckGl());
 
-  assert(checkGL());
+  DrawableAxes axes;
+  axes.SetCameraControl(&camera_control);
+  axes.SetUp();
 
-  int volume_size = 128;
-  /*
-  BoolVoxelVolume voxel_volume(volume_size, volume_size, volume_size);
-  for(int z = 0; z < volume_size; z++) {
-    for(int y = 0; y < volume_size; y++) {
-      for(int x = 0; x < volume_size; x++) {
-        Vector3f v = voxel_volume.CenterOf(x,y,z);
-        if(pow(v.x,4) + pow(v.y,4) + pow(v.z,4) < 1.0f)
-          voxel_volume.Set(x,y,z);
-      }
-    }
-  }
-  voxel_volume = voxel_volume.SweepX();
-  voxel_volume = voxel_volume.RotateZ();
-  */
-
-  LabeledVoxelVolume voxel_volume(volume_size, volume_size, volume_size);
-  float r2 = pow(1.0f / 3.0f, 2.0f);
-  for(int z = 0; z < volume_size; z++) {
-    for(int y = 0; y < volume_size; y++) {
-      for(int x = 0; x < volume_size; x++) {
-        //voxel_volume.Set(x,y,z, short(1+x+y*8+z*64));
-        //voxel_volume.Set(x,y,z, x%3+1);
-        Vector3f v = voxel_volume.CenterOf(x,y,z);
-        //bool inside = pow(v.x,2) + pow(v.y,2) < r2;
-        bool inside = pow(v.x,2) + pow(v.y,2) + pow(v.z,2) < r2;
-        voxel_volume.Set(x,y,z, inside);
-      }
-    }
-  }
-  voxel_volume.SweepXAndMerge();
-  LabeledVoxelVolume rotate_voxel_volume = voxel_volume.RotateY();
-  voxel_volume.Merge(rotate_voxel_volume);
-  voxel_volume.SweepXAndMerge();
-
-  TriMesh voxel_volume_mesh;
-  {
-    PrintingScopedTimer st("CreateBlockMesh");
-    voxel_volume_mesh = voxel_volume.CreateBlockMesh();
-  }
-
-  /*
-  TriMesh voxel_volume_mesh;
-  {
-    PrintingScopedTimer st("ExploreShapes");
-    voxel_volume_mesh = ExploreShapes();
-  }
-  */
-
-  {
-    size_t verts_size = voxel_volume_mesh.verts.size();
-    size_t tris_size = voxel_volume_mesh.tris.size();
-    std::cout << "vox mesh: "
-      << verts_size << " verts ("
-      << (verts_size * sizeof(Vector3f) / 1024) << " KiB), "
-      << tris_size << " tris, ("
-      << (tris_size * sizeof(Tri) / 1024) << " KiB)\n";
-  }
-
-  /*
-  {
-    PrintingScopedTimer st("Export");
-    WavFrObj out_obj;
-    out_obj.AddObjectFromTriMesh("shapes", voxel_volume_mesh);
-    std::string out_str = out_obj.Export();
-    std::ofstream out_file("shapes.obj");
-    out_file << out_str;
-    out_file.close();
-  }
-  */
-
-  GLuint voxel_volume_vert_buffer_id = vertVBO(voxel_volume_mesh);
-  GLuint voxel_volume_norm_buffer_id = normVBO(voxel_volume_mesh);
-  GLuint voxel_volume_color_buffer_id = colorVBO(voxel_volume_mesh);
-
-  assert(checkGL());
-
-  GLuint norm_vert_shader_id =
-    loadShader("src/norm_color_vert.glsl", GL_VERTEX_SHADER);
-  GLuint norm_frag_shader_id =
-    loadShader("src/norm_color_frag.glsl", GL_FRAGMENT_SHADER);
-  GLuint norm_color_program_id =
-    linkProgram(norm_vert_shader_id, norm_frag_shader_id);
-  glDeleteShader(norm_vert_shader_id);
-  glDeleteShader(norm_frag_shader_id);
-
-  assert(checkGL());
-
-  GLuint norm_program_mvp_id = glGetUniformLocation(norm_color_program_id, "mvp");
-
-  assert(checkGL());
-
-  GLuint norm_tex_vert_shader_id =
-    loadShader("src/norm_tex_vert.glsl", GL_VERTEX_SHADER);
-  GLuint norm_tex_frag_shader_id =
-    loadShader("src/norm_tex_frag.glsl", GL_FRAGMENT_SHADER);
-  GLuint norm_tex_program_id =
-    linkProgram(norm_tex_vert_shader_id, norm_tex_frag_shader_id);
-  glDeleteShader(norm_tex_vert_shader_id);
-  glDeleteShader(norm_tex_frag_shader_id);
-
-  assert(checkGL());
-
-  GLuint norm_tex_program_mvp_id =
-    glGetUniformLocation(norm_tex_program_id, "mvp");
-  GLuint norm_tex_program_sampler_id =
-    glGetUniformLocation(norm_color_program_id, "sampler");
-
-  assert(checkGL());
+  assert(CheckGl());
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_GREATER);
 
-  glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+  glClearColor(0.125f, 0.125f, 0.125f, 0.0f);
   glClearDepth(-1.0f);
+
+  assert(CheckGl());
 
   int64_t frame = 0;
   while(!glfwWindowShouldClose(window)) {
-    /*
-    bool going_forward  = getCommandState(FORWARD);
-    bool going_backward = getCommandState(BACKWARD);
-    bool going_left     = getCommandState(STRAFE_LEFT);
-    bool going_right    = getCommandState(STRAFE_RIGHT);
-    bool going_up       = getCommandState(UP);
-    bool going_down     = getCommandState(DOWN);
-
-    Vector3f move = Zero_Vector3f;
-
-    if(going_forward && !going_backward)
-      move += Vector3f(0, 0, -1);
-    else if(going_backward && !going_forward)
-      move += Vector3f(0, 0, 1);
-
-    if(going_left && !going_right)
-      move += Vector3f(-1, 0, 0);
-    else if(going_right && !going_left)
-      move += Vector3f(1, 0, 0);
-
-    if(going_up && !going_down)
-      move += Vector3f(0, 1, 0);
-    else if(going_down && !going_up)
-      move += Vector3f(0, -1, 0);
-
-    if(move != Zero_Vector3f) {
-      move = move.unit() * 0.05;
-      camera_obj.moveLocal(move);
-    }
-
-    bool turning_left  = getCommandState(TURN_LEFT);
-    bool turning_right = getCommandState(TURN_RIGHT);
-
-    if(turning_left && !turning_right)
-      camera_obj.rot *= Quat::rotation(UnitY_Vector3f, 0.03);
-    else if(turning_right && !turning_left)
-      camera_obj.rot *= Quat::rotation(UnitY_Vector3f, -0.03);
-
-    Vector3f forward =
-      (Matrix4x4f::rotation(camera_obj.rot) * -Vector4f::UNIT_Z).dropW();
-    camera.look(camera_obj.pos, forward, UnitY_Vector3f);
-    */
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // draw axes
-
-    /*
-    glUseProgram(norm_tex_program_id);
-
-    UniformMatrix(norm_tex_program_mvp_id,
-                  camera_control.getCam()->getTransform());
-
-    assert(checkGL());
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, axes_texture);
-    glUniform1i(norm_tex_program_sampler_id, 0);
-
-    assert(checkGL());
-
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, axes_vert_buffer_id);
-    glVertexAttribPointer(
-      0,        // index (attribute)
-      3,        // size
-      GL_FLOAT, // type
-      GL_FALSE, // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    assert(checkGL());
-
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, axes_norm_buffer_id);
-    glVertexAttribPointer(
-      1,        // index (attribute)
-      3,        // size
-      GL_FLOAT, // type
-      GL_FALSE, // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    assert(checkGL());
-
-    glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, axes_uv_buffer_id);
-    glVertexAttribPointer(
-      2,        // index (attribute)
-      2,        // size
-      GL_FLOAT, // type
-      GL_FALSE, // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    assert(checkGL());
-
-    glDrawArrays(GL_TRIANGLES, 0, axes_mesh.tris.size() * 3);
-
-    assert(checkGL());
-
-    glDisableVertexAttribArray(2);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
-    */
-
-    assert(checkGL());
-
-    // draw voxel_volume
-
-    glUseProgram(norm_color_program_id);
-
-    UniformMatrix(norm_program_mvp_id, camera_control.getCam()->getTransform());
-
-    assert(checkGL());
-
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_vert_buffer_id);
-    glVertexAttribPointer(
-      0,        // index (attribute)
-      3,        // size
-      GL_FLOAT, // type
-      GL_FALSE, // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    assert(checkGL());
-
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_norm_buffer_id);
-    glVertexAttribPointer(
-      1,        // index (attribute)
-      3,        // size
-      GL_FLOAT, // type
-      GL_FALSE, // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    glEnableVertexAttribArray(2);
-    glBindBuffer(GL_ARRAY_BUFFER, voxel_volume_color_buffer_id);
-    glVertexAttribPointer(
-      2,        // index (attribute)
-      3,        // size
-      GL_UNSIGNED_BYTE, // type
-      GL_TRUE,  // normalized
-      0,        // stride
-      (void*)0  // pointer (buffer offset)
-    );
-
-    assert(checkGL());
-
-    glDrawArrays(GL_TRIANGLES, 0, voxel_volume_mesh.tris.size() * 3);
-
-    assert(checkGL());
-
-    glDisableVertexAttribArray(2);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
-
-    assert(checkGL());
-
-    // done drawing
-
+    axes.Draw();
+    assert(CheckGl());
     glfwSwapBuffers(window);
     glfwPollEvents();
-    assert(checkGL());
+    assert(CheckGl());
     frame++;
   }
 
-  glDeleteProgram(norm_color_program_id);
-  glDeleteBuffers(1, &voxel_volume_vert_buffer_id);
-  glDeleteBuffers(1, &voxel_volume_norm_buffer_id);
-  glDeleteBuffers(1, &voxel_volume_color_buffer_id);
-
-  glDeleteProgram(norm_tex_program_id);
-  glDeleteBuffers(1, &axes_vert_buffer_id);
-  glDeleteBuffers(1, &axes_uv_buffer_id);
-  glDeleteBuffers(1, &axes_norm_buffer_id);
-  glDeleteTextures(1, &axes_texture);
+  axes.TearDown();
 
   glDeleteVertexArrays(1, &array_id);
 
-  assert(checkGL());
+  assert(CheckGl());
 
   return 0;
 }

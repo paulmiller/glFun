@@ -7,22 +7,24 @@
 #include <GL/glew.h> // must precede gl, glfw
 #include <GLFW/glfw3.h>
 
+#include <vector>
+
 // returns false if there have been any GL errors
-bool checkGL();
+bool CheckGl();
 
 // build GLSL
-GLuint loadShader(const char *source_name, GLenum shader_type);
-GLuint linkProgram(GLuint vert_shader_id, GLuint frag_shader_id);
+GLuint LoadShader(const char *source_name, GLenum shader_type);
+GLuint LinkProgram(GLuint vert_shader_id, GLuint frag_shader_id);
 
 void UniformMatrix(GLint location, const Matrix4x4f &m);
 
 // make vertex buffer objects from a mesh
-GLuint vertVBO(const TriMesh &m);
-GLuint uvVBO(const TriMesh &m);
-GLuint normVBO(const TriMesh &m);
-GLuint colorVBO(const TriMesh &m);
+GLuint MakeVertexVbo(const TriMesh &m);
+GLuint MakeUvVbo(const TriMesh &m);
+GLuint MakeNormVbo(const TriMesh &m);
+GLuint MakeColorVbo(const TriMesh &m);
 
 // turn a png file into a GL texture
-GLuint pngTex(const char *png_name);
+GLuint MakeTextureFromPng(const char *png_name);
 
 #endif
