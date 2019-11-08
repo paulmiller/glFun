@@ -1,5 +1,11 @@
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-Wall -Wextra -Wno-unused-parameter -g -O3)
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -g)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-O0)
+else()
+  add_compile_options(-O3)
+endif()
 
 add_subdirectory(math)
 

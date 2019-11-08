@@ -38,7 +38,7 @@ std::string PrettyPrintNumBytes(unsigned long long num) {
   // must add bigger units if ullong can represent values >= 1024 EiB
   static_assert(std::numeric_limits<decltype(num)>::digits <= 70);
 
-  int unit = 0;
+  size_t unit = 0;
   bool round_up = false;
   while(num + round_up >= 1024) {
     round_up = ((num & 1023) >= 512);

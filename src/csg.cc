@@ -1,9 +1,59 @@
 #include "csg.h"
 
 #include "math/util.h"
+#include "image_png.h"
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <fstream>
+
+std::ostream& operator<<(std::ostream &os, const CsgNode::Hit &hit) {
+  os << (hit.entering ? u8"↘" : u8"↗");
+  os << hit.distance;
+  return os;
+}
+
+void CsgUnion::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
+  // sounds bad, but can't think of a more concise variable name (ಠ ~ ಠ)
+  std::vector<Hit> child_hits;
+  a->IntersectRay(ray, &child_hits);
+  size_t a_hit_num = child_hits.size();
+  b->IntersectRay(ray, &child_hits);
+  auto begin = child_hits.begin();
+  std::inplace_merge(begin, begin + a_hit_num, child_hits.end());
+  // "child_hits" is now sorted
+
+  // find "start_inside", which is the number of child shapes (0-2) the ray
+  // starts inside of
+  int entries = 0, exits = 0;
+  for(Hit &hit: child_hits) {
+    if(hit.entering)
+      entries++;
+    else
+      exits++;
+  }
+  int start_inside = exits - entries;
+  assert(0 <= start_inside); assert(start_inside <= 2);
+
+  int currently_inside = start_inside;
+  for(Hit &hit: child_hits) {
+    int previously_inside = currently_inside;
+    if(hit.entering)
+      currently_inside++;
+    else
+      currently_inside--;
+    assert(0 <= currently_inside); assert(currently_inside <= 2);
+    if(previously_inside == 0) {
+      // we just entered the union-shape
+      assert(1 <= currently_inside);
+      hits->push_back(hit);
+    } else if(currently_inside == 0) {
+      // we just exited the union-shape
+      assert(1 <= previously_inside);
+      hits->push_back(hit);
+    }
+  }
+}
 
 // slab method
 void CsgCube::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
@@ -37,13 +87,37 @@ void CsgCube::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
   if(t_min < t_max) {
     if(t_min >= 0) {
       // the ray starts outside the cube, enters it at t_min, and exits at t_max
-      hits->push_back({t_min, true});
-      hits->push_back({t_max, false});
+      hits->push_back({this, t_min, true});
+      hits->push_back({this, t_max, false});
     } else if(t_max >= 0) {
       // the ray starts inside the cube and exits at t_max
-      hits->push_back({t_max, false});
+      hits->push_back({this, t_max, false});
     }
   }
+}
+
+Vector3f CsgCube::GetNormal(Vector3f pos) {
+  float abs_x = std::abs(pos.x);
+  float abs_y = std::abs(pos.y);
+  float abs_z = std::abs(pos.z);
+  if(abs_x > abs_y && abs_x > abs_z) {
+    if(pos.x < 0)
+      return -UnitX_Vector3f;
+    else
+      return UnitX_Vector3f;
+  }
+
+  if(abs_y > abs_z) {
+    if(pos.y < 0)
+      return -UnitY_Vector3f;
+    else
+      return UnitY_Vector3f;
+  }
+
+  if(pos.z < 0)
+    return -UnitZ_Vector3f;
+  else
+    return UnitZ_Vector3f;
 }
 
 /*
@@ -75,43 +149,50 @@ void CsgSphere::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
 
   if(t2 >= 0) {
     if(t1 >= 0)
-      hits->push_back({t1, true});
-    hits->push_back({t2, false});
+      hits->push_back({this, t1, true});
+    hits->push_back({this, t2, false});
   }
 }
 
-#include <iostream>
+Vector3f CsgSphere::GetNormal(Vector3f pos) {
+  // if "pos" is on the sphere surface, then pos.len() == radius, so use that to
+  // normalize "pos"
+  return pos / radius;
+}
 
 std::vector<Ray> TestIntersectRay() {
-  int rows = 40, cols = 40;
+  int rows = 1024, cols = 1024;
 
-  CsgCube cube;
+  CsgUnion combination {
+    std::make_unique<CsgSphere>(1.3), std::make_unique<CsgCube>() };
 
   Camera camera;
   camera.setResolution(cols, rows);
-  camera.setFrustum(0.01, 100.0, Tau_f/4, 1);
-  camera.look(Vector3f{3,3,0}, Vector3f{-1,-1,0}, Vector3f{0,1,0});
+  camera.setFrustum(0.01, 100.0, Tau_f/6, 1);
+  camera.lookAt(Vector3f{1,2,3}, Zero_Vector3f, UnitY_Vector3f);
   std::vector<Ray> rays = MakeCameraRays(camera);
 
-  std::vector<int> hit_counts;
-  hit_counts.reserve(rays.size());
+  Image img(cols, rows, Pixel::V8_T);
+  Pixel::V8 *px = (Pixel::V8*) img.data();
 
   std::vector<CsgPrimitive::Hit> hits;
   for(const Ray &ray: rays) {
-    cube.IntersectRay(ray, &hits);
-    hit_counts.push_back(hits.size());
+    combination.IntersectRay(ray, &hits);
+    if(hits.size()) {
+      Vector3f pos = ray.start + hits[0].distance * ray.direction;
+      Vector3f normal = hits[0].primitive->GetNormal(pos);
+      float v = std::clamp(dot(normal, UnitY_Vector3f) * 255.0f, 10.0f, 255.0f);
+      *px = {uint8_t(v)};
+    } else {
+      *px = {0};
+    }
+    px++;
     hits.clear();
   }
 
-  int i = 0;
-  for(int row = 0; row < rows; row++) {
-    for(int col = 0; col < cols; col++) {
-      if(col) std::cout << ' ';
-      std::cout << hit_counts[i];
-      i++;
-    }
-    std::cout << '\n';
-  }
+  std::ofstream out("out.png", std::ofstream::binary);
+  writePng(out, img);
+  out.close();
 
   return rays;
 }

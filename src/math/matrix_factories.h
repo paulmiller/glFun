@@ -42,7 +42,7 @@ Matrix<T,4,4> TranslationMatrix4x4(Vector3<T> v) {
 template<typename T>
 Matrix<T,4,4> RotationMatrix4x4(Vector3<T> axis, T angle) {
   // "axis" should be a unit vector. This is a very permissive assertion.
-  assert(fabs(axis.len2() - 1) < 0.1);
+  assert(std::abs(axis.len2() - 1) < 0.1);
 
   T xy = axis.x * axis.y;
   T xz = axis.x * axis.z;
