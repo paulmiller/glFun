@@ -246,7 +246,7 @@ int submain() {
   axes.SetCameraControl(&camera_control);
   axes.SetUp();
 
-  DrawableRays rays(TestIntersectRay());
+  DrawableRays rays(TestCsg());
   rays.SetCameraControl(&camera_control);
   rays.SetUp();
 

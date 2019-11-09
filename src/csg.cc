@@ -13,29 +13,41 @@ std::ostream& operator<<(std::ostream &os, const CsgNode::Hit &hit) {
   return os;
 }
 
-void CsgUnion::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
-  // sounds bad, but can't think of a more concise variable name (ಠ ~ ಠ)
-  std::vector<Hit> child_hits;
-  a->IntersectRay(ray, &child_hits);
-  size_t a_hit_num = child_hits.size();
-  b->IntersectRay(ray, &child_hits);
-  auto begin = child_hits.begin();
-  std::inplace_merge(begin, begin + a_hit_num, child_hits.end());
-  // "child_hits" is now sorted
-
-  // find "start_inside", which is the number of child shapes (0-2) the ray
-  // starts inside of
-  int entries = 0, exits = 0;
-  for(Hit &hit: child_hits) {
-    if(hit.entering)
-      entries++;
-    else
-      exits++;
+namespace {
+  // return a sorted vector of all intersections between a ray and 2 shapes
+  std::vector<CsgNode::Hit> IntersectChildren(
+    const Ray &ray, const CsgNode &a, const CsgNode &b
+  ) {
+    // sounds bad, but can't think of a more concise variable name (ಠ ~ ಠ)
+    std::vector<CsgNode::Hit> child_hits;
+    a.IntersectRay(ray, &child_hits);
+    size_t a_hit_num = child_hits.size();
+    b.IntersectRay(ray, &child_hits);
+    auto begin = child_hits.begin();
+    std::inplace_merge(begin, begin + a_hit_num, child_hits.end());
+    // "child_hits" is now sorted
+    return child_hits;
   }
-  int start_inside = exits - entries;
-  assert(0 <= start_inside); assert(start_inside <= 2);
 
-  int currently_inside = start_inside;
+  // given the vector returned by IntersectChildren, return the number of shapes
+  // (0-2) the ray started inside of
+  int StartsInside(const std::vector<CsgNode::Hit> &hits) {
+    int entries = 0, exits = 0;
+    for(const CsgNode::Hit &hit: hits) {
+      if(hit.entering)
+        entries++;
+      else
+        exits++;
+    }
+    int start_inside = exits - entries;
+    assert(0 <= start_inside); assert(start_inside <= 2);
+    return start_inside;
+  }
+}
+
+void CsgUnion::IntersectRay(const Ray &ray, std::vector<Hit> *hits) const {
+  std::vector<Hit> child_hits = IntersectChildren(ray, *a, *b);
+  int currently_inside = StartsInside(child_hits);
   for(Hit &hit: child_hits) {
     int previously_inside = currently_inside;
     if(hit.entering)
@@ -55,8 +67,70 @@ void CsgUnion::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
   }
 }
 
+void
+CsgIntersection::IntersectRay(const Ray &ray, std::vector<Hit> *hits) const {
+  std::vector<Hit> child_hits = IntersectChildren(ray, *a, *b);
+  int currently_inside = StartsInside(child_hits);
+  for(Hit &hit: child_hits) {
+    int previously_inside = currently_inside;
+    if(hit.entering)
+      currently_inside++;
+    else
+      currently_inside--;
+    assert(0 <= currently_inside); assert(currently_inside <= 2);
+    if(currently_inside == 2) {
+      // we just entered the intersection-shape
+      assert(previously_inside < 2);
+      hits->push_back(hit);
+    } else if(previously_inside == 2) {
+      // we just exited the intersection-shape
+      hits->push_back(hit);
+    }
+  }
+}
+
+/*
+sphere equation:
+  r² = x² + y² + z²
+
+ray equation:
+  S + t⋅D
+
+solve for t:
+  r² = (Sx + t⋅Dx)² + (Sy + t⋅Dy)² + (Sz + t⋅Dz)²
+  r² = (Sx² + 2⋅Sx⋅t⋅Dx + t²⋅Dx²) + (Sy² + 2⋅Sy⋅t⋅Dy + t²⋅Dy²) + (Sz² + ...
+  r² = (Dx²+Dy²+Dz²)⋅t² + (2⋅Sx⋅Dx + 2⋅Sy⋅Dy + 2⋅Sz⋅Dz)⋅t + (Sx²+Sy²+Sz²)
+  0  = (Dx²+Dy²+Dz²)⋅t² + 2⋅(Sx⋅Dx + Sy⋅Dy + Sz⋅Dz)⋅t + (Sx²+Sy²+Sz² - r²)
+  ...then use the quadratic formula
+*/
+void CsgSphere::IntersectRay(const Ray &ray, std::vector<Hit> *hits) const {
+  const Vector3f &S = ray.start, &D = ray.direction;
+
+  float a = D.x*D.x + D.y*D.y + D.z*D.z;
+  float b = 2 * (S.x*D.x + S.y*D.y + S.z*D.z);
+  float c = S.x*S.x + S.y*S.y + S.z*S.z - radius*radius;
+
+  float square = b*b - 4*a*c; // the part under the quadratic formula's radical
+  if(square < 0) return;
+  float root = sqrt(square);
+  float t1 = (-b - root) / (2*a);
+  float t2 = (-b + root) / (2*a);
+
+  if(t2 >= 0) {
+    if(t1 >= 0)
+      hits->push_back({this, t1, true});
+    hits->push_back({this, t2, false});
+  }
+}
+
+Vector3f CsgSphere::GetNormal(Vector3f pos) const {
+  // if "pos" is on the sphere surface, then pos.len() == radius, so use that to
+  // normalize "pos"
+  return pos / radius;
+}
+
 // slab method
-void CsgCube::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
+void CsgCube::IntersectRay(const Ray &ray, std::vector<Hit> *hits) const {
   const Vector3f &S = ray.start, &D = ray.direction;
 
   static_assert(std::numeric_limits<float>::has_infinity);
@@ -96,7 +170,7 @@ void CsgCube::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
   }
 }
 
-Vector3f CsgCube::GetNormal(Vector3f pos) {
+Vector3f CsgCube::GetNormal(Vector3f pos) const {
   float abs_x = std::abs(pos.x);
   float abs_y = std::abs(pos.y);
   float abs_z = std::abs(pos.z);
@@ -120,51 +194,16 @@ Vector3f CsgCube::GetNormal(Vector3f pos) {
     return UnitZ_Vector3f;
 }
 
-/*
-sphere equation:
-  r² = x² + y² + z²
-
-ray equation:
-  S + t⋅D
-
-solve for t:
-  r² = (Sx + t⋅Dx)² + (Sy + t⋅Dy)² + (Sz + t⋅Dz)²
-  r² = (Sx² + 2⋅Sx⋅t⋅Dx + t²⋅Dx²) + (Sy² + 2⋅Sy⋅t⋅Dy + t²⋅Dy²) + (Sz² + ...
-  r² = (Dx²+Dy²+Dz²)⋅t² + (2⋅Sx⋅Dx + 2⋅Sy⋅Dy + 2⋅Sz⋅Dz)⋅t + (Sx²+Sy²+Sz²)
-  0  = (Dx²+Dy²+Dz²)⋅t² + 2⋅(Sx⋅Dx + Sy⋅Dy + Sz⋅Dz)⋅t + (Sx²+Sy²+Sz² - r²)
-  ...then use the quadratic formula
-*/
-void CsgSphere::IntersectRay(const Ray &ray, std::vector<Hit> *hits) {
-  const Vector3f &S = ray.start, &D = ray.direction;
-
-  float a = D.x*D.x + D.y*D.y + D.z*D.z;
-  float b = 2 * (S.x*D.x + S.y*D.y + S.z*D.z);
-  float c = S.x*S.x + S.y*S.y + S.z*S.z - radius*radius;
-
-  float square = b*b - 4*a*c; // the part under the quadratic formula's radical
-  if(square < 0) return;
-  float root = sqrt(square);
-  float t1 = (-b - root) / (2*a);
-  float t2 = (-b + root) / (2*a);
-
-  if(t2 >= 0) {
-    if(t1 >= 0)
-      hits->push_back({this, t1, true});
-    hits->push_back({this, t2, false});
-  }
-}
-
-Vector3f CsgSphere::GetNormal(Vector3f pos) {
-  // if "pos" is on the sphere surface, then pos.len() == radius, so use that to
-  // normalize "pos"
-  return pos / radius;
-}
-
-std::vector<Ray> TestIntersectRay() {
+std::vector<Ray> TestCsg() {
   int rows = 1024, cols = 1024;
 
-  CsgUnion combination {
-    std::make_unique<CsgSphere>(1.3), std::make_unique<CsgCube>() };
+  std::unique_ptr<CsgNode> combination = std::make_unique<CsgUnion>(
+    std::make_unique<CsgIntersection>(
+      std::make_unique<CsgSphere>(1.3),
+      std::make_unique<CsgCube>()
+    ),
+    std::make_unique<CsgSphere>(1.2)
+  );
 
   Camera camera;
   camera.setResolution(cols, rows);
@@ -177,7 +216,7 @@ std::vector<Ray> TestIntersectRay() {
 
   std::vector<CsgPrimitive::Hit> hits;
   for(const Ray &ray: rays) {
-    combination.IntersectRay(ray, &hits);
+    combination->IntersectRay(ray, &hits);
     if(hits.size()) {
       Vector3f pos = ray.start + hits[0].distance * ray.direction;
       Vector3f normal = hits[0].primitive->GetNormal(pos);
