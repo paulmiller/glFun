@@ -101,6 +101,32 @@ TEST_CASE("Matrix determinant") {
   REQUIRE(a3x3.determinant() == 0);
 }
 
+TEST_CASE("Matrix isfinite") {
+  Matrix<float,2,2> a = {{
+    {1, 2},
+    {3, 4}
+  }};
+  REQUIRE(a.isfinite());
+
+  Matrix<float,2,2> b = {{
+    {1, INFINITY},
+    {3, 4}
+  }};
+  REQUIRE(!b.isfinite());
+
+  Matrix<float,2,2> c = {{
+    {1, 2},
+    {3, -INFINITY}
+  }};
+  REQUIRE(!c.isfinite());
+
+  Matrix<float,2,2> d = {{
+    {1, 2},
+    {NAN, 4}
+  }};
+  REQUIRE(!d.isfinite());
+}
+
 TEST_CASE("Matrix scalar multiplication") {
   Matrix<int,3,3> product{{
     { 2,  4,  6},

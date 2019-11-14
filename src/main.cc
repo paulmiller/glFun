@@ -1,7 +1,7 @@
 #include "camera_control.h"
-#include "csg.h"
 #include "gl_util.h"
 #include "gl_viewport_control.h"
+#include "half_curve_mesh.h"
 #include "image.h"
 #include "image_png.h"
 #include "mesh.h"
@@ -11,6 +11,7 @@
 #include "util.h"
 
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -199,6 +200,14 @@ int main() {
 #include <cmath>
 
 int submain() {
+  HalfCurveMesh mesh = MakeAlignedCells();
+  mesh.Check();
+  WavFrObj obj = mesh.MakeWavFrObj();
+  std::string text = obj.Export();
+  std::ofstream out("out.obj", std::ofstream::out);
+  out << text;
+  out.close();
+
   assert(CheckGl());
 
   glfwWindowHint(GLFW_SAMPLES, 4);
@@ -246,10 +255,6 @@ int submain() {
   axes.SetCameraControl(&camera_control);
   axes.SetUp();
 
-  DrawableRays rays(TestCsg());
-  rays.SetCameraControl(&camera_control);
-  rays.SetUp();
-
   assert(CheckGl());
 
   glEnable(GL_DEPTH_TEST);
@@ -265,8 +270,6 @@ int submain() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     assert(CheckGl());
     axes.Draw();
-    assert(CheckGl());
-    rays.Draw();
     assert(CheckGl());
     glfwSwapBuffers(window);
     glfwPollEvents();

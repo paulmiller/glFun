@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ostream>
+#include <type_traits>
 
 template<typename T> class Vector3;
 
@@ -41,6 +42,10 @@ template<typename T>
 class Vector3 {
 public:
   T x, y, z;
+
+  bool isfinite() const {
+    return std::isfinite(x) && std::isfinite(y) && std::isfinite(z);
+  }
 
   T len() const {
     return sqrt(len2());
@@ -218,6 +223,11 @@ template<typename T>
 class Vector4 {
 public:
   T x, y, z, w;
+
+  bool isfinite() const {
+    return std::isfinite(x) && std::isfinite(y) &&
+           std::isfinite(z) && std::isfinite(w);
+  }
 
   // normalize homogeneous coordinates
   Vector3<T> divideByW() const {

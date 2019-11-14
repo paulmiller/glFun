@@ -25,7 +25,7 @@ public:
     std::vector<ObjVert> verts;
 
     ObjFace() {}
-    ObjFace(std::vector<ObjVert> &&verts) :
+    ObjFace(std::vector<ObjVert> verts) :
       verts(std::move(verts)) {}
   };
 
@@ -36,16 +36,23 @@ public:
     int min_sides;
     int max_sides;
 
-    ObjObject(std::string &&name) :
+    ObjObject(std::string name) :
       name(std::move(name)), min_sides(0), max_sides(0) {}
 
-    void addFace(std::vector<ObjVert> &&verts);
+    void addFace(std::vector<ObjVert> verts);
 
   private:
     TriMesh GetTriMesh(const WavFrObj *source) const;
 
     friend WavFrObj;
   };
+
+  WavFrObj() {}
+  WavFrObj(
+    std::vector<Vector3f> verts,   std::vector<UvCoord>   uvs,
+    std::vector<Vector3f> normals, std::vector<ObjObject> objects)
+  : verts_  (std::move(verts  )),  uvs_    (std::move(uvs    )),
+    normals_(std::move(normals)),  objects_(std::move(objects)) {}
 
   void Clear();
 
@@ -63,7 +70,7 @@ public:
 
 private:
   // used by ParseFrom
-  void AddFaceToCurrentObject(std::vector<ObjVert> &&verts);
+  void AddFaceToCurrentObject(std::vector<ObjVert> verts);
   void Sanitize();
 
   std::vector<Vector3f> verts_; // vertex positions

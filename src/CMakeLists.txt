@@ -1,8 +1,10 @@
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-Wall -Wextra -Wno-unused-parameter -g)
+
+# -fcolor-diagnostics so clang won't disable color when buffered through ninja
+add_compile_options(-Wall -Wextra -Wno-unused-parameter -fcolor-diagnostics)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-O0)
+  add_compile_options(-O0 -g)
 else()
   add_compile_options(-O3)
 endif()
@@ -27,6 +29,7 @@ set(common_sources
   gl_util.cc
   gl_viewport_control.cc
   glfw_window.cc
+  half_curve_mesh.cc
   image.cc
   image_hdr.cc
   image_png.cc

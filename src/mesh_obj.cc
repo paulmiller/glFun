@@ -5,7 +5,7 @@
 #include <sstream>
 #include <unordered_map>
 
-void WavFrObj::ObjObject::addFace(std::vector<ObjVert> &&verts) {
+void WavFrObj::ObjObject::addFace(std::vector<ObjVert> verts) {
   int sides = int(verts.size());
   assert(sides >= 3);
   if(min_sides == 0 || sides < min_sides) min_sides = sides;
@@ -169,7 +169,7 @@ std::string WavFrObj::Export() const {
   return output.str();
 }
 
-void WavFrObj::AddFaceToCurrentObject(std::vector<ObjVert> &&verts) {
+void WavFrObj::AddFaceToCurrentObject(std::vector<ObjVert> verts) {
   if(objects_.size() == 0)
     objects_.emplace_back("");
   objects_.back().addFace(std::move(verts));

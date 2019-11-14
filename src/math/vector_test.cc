@@ -5,6 +5,8 @@
 
 #include "catch.h"
 
+#include <cmath>
+
 TEST_CASE("Vector initialization") {
   Vector3<int> v3 {1,2,3};
   REQUIRE(v3.x == 1);
@@ -112,6 +114,23 @@ TEST_CASE("Vector3 length") {
   REQUIRE(v.len() == 7);
   REQUIRE(v.len2() == 7*7);
   REQUIRE(v.unit() == Vector3d {2.0/7.0, 3.0/7.0, 6.0/7.0});
+}
+
+TEST_CASE("Vector3 isfinite") {
+  REQUIRE(Vector3f{1,2,3}.isfinite());
+  REQUIRE(Vector3f{-1,0,1}.isfinite());
+  REQUIRE(!Vector3f{NAN,2,3}.isfinite());
+  REQUIRE(!Vector3f{1,INFINITY,3}.isfinite());
+  REQUIRE(!Vector3f{1,2,-INFINITY}.isfinite());
+}
+
+TEST_CASE("Vector4 isfinite") {
+  REQUIRE(Vector4f{1,2,3,4}.isfinite());
+  REQUIRE(Vector4f{-1,0,1,0}.isfinite());
+  REQUIRE(!Vector4f{NAN,2,3,4}.isfinite());
+  REQUIRE(!Vector4f{1,INFINITY,3,4}.isfinite());
+  REQUIRE(!Vector4f{1,2,-INFINITY,4}.isfinite());
+  REQUIRE(!Vector4f{1,2,3,NAN}.isfinite());
 }
 
 TEST_CASE("Vector3 cross product") {

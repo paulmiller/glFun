@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iterator>
 #include <ostream>
 #include <type_traits>
@@ -110,6 +111,16 @@ public:
          - data[0][0] * data[1][2] * data[2][1]
          - data[0][1] * data[1][0] * data[2][2]
          - data[0][2] * data[1][1] * data[2][0];
+  }
+
+  bool isfinite() const {
+    for(int r = 0; r < Rows; r++) {
+      for(int c = 0; c < Cols; c++) {
+        if(!std::isfinite(data[r][c]))
+          return false;
+      }
+    }
+    return true;
   }
 };
 
