@@ -201,7 +201,9 @@ int main() {
 
 int submain() {
   HalfCurveMesh mesh = MakeAlignedCells();
-  mesh.Check();
+  mesh.CutCurve(HalfCurveMesh::HalfCurveIndex(0), 0.5);
+  auto bisect_curves = mesh.Bisect(Vector3d{1,1,1});
+  //mesh.LoopCut(std::move(bisect_curves));
   WavFrObj obj = mesh.MakeWavFrObj();
   std::string text = obj.Export();
   std::ofstream out("out.obj", std::ofstream::out);
