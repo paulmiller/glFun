@@ -62,9 +62,9 @@ add_executable(glfun ${main_sources} ${common_sources})
 target_link_libraries(glfun math)
 target_link_libraries(glfun xxHash::xxhash)
 
-add_executable(test ${test_sources} ${common_sources})
-target_link_libraries(test math)
-target_link_libraries(test catch)
+add_executable(src_test ${test_sources} ${common_sources})
+target_link_libraries(src_test math)
+target_link_libraries(src_test catch)
 
 set(external_libs
   m
@@ -77,5 +77,5 @@ set(external_libs
 foreach(lib ${external_libs})
   find_library(${lib}_lib ${lib})
   target_link_libraries(glfun ${${lib}_lib})
-  target_link_libraries(test ${${lib}_lib})
+  target_link_libraries(src_test ${${lib}_lib})
 endforeach(lib)

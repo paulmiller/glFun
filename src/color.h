@@ -2,6 +2,7 @@
 #define COLOR_H
 
 #include <algorithm>
+#include <cstdint>
 
 class Color {
 public:

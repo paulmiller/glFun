@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <unordered_map>
 
 HalfCurveMesh::VertexIndex HalfCurveMesh::AddVertex() {
   auto [index, realloc_offset] = vertices_.Append({});

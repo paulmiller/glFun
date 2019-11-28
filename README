@@ -11,9 +11,11 @@ requried build tools:
 - re2c
 
 example commands build, test, and run:
+$ mkdir out/
 $ cd out/
 $ CC=clang CXX=clang++ cmake -G Ninja ..
+$ ninja
 $ cd ..
-$ out/test
+$ out/src_test
 $ out/math_test
 $ out/glfun
