@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <stack>
 #include <unordered_map>
 
 HalfCurveMesh::VertexIndex HalfCurveMesh::AddVertex() {
@@ -92,7 +93,7 @@ HalfCurveMesh::ObjectIndex HalfCurveMesh::AddObject(std::string name) {
 
 #ifndef NDEBUG
 void HalfCurveMesh::Check() const {
-  PrintingScopedTimer("HalfCurveMesh::Check");
+  PrintingScopedTimer timer("HalfCurveMesh::Check");
 
   for(const HalfCurve &curve: half_curves_) {
     vertices_.CheckPtr(curve.vertex);
@@ -202,8 +203,30 @@ void HalfCurveMesh::Check() const {
 }
 #endif // #ifndef NDEBUG
 
+std::unordered_set<HalfCurveMesh::Face*>
+HalfCurveMesh::FindConnectedFaces(Face *start_face) {
+  std::unordered_set<Face*> visited;
+  std::stack<Face*> stack;
+  stack.push(start_face);
+  while(!stack.empty()) {
+    Face *current_face = stack.top();
+    stack.pop();
+    visited.insert(current_face);
+
+    HalfCurve *start_curve = current_face->curve;
+    HalfCurve *current_curve = start_curve;
+    do {
+      Face *next_face = current_curve->twin_curve->face;
+      if(!visited.count(next_face))
+        stack.push(next_face);
+      current_curve = current_curve->next_curve;
+    } while(current_curve != start_curve);
+  }
+  return visited;
+}
+
 WavFrObj HalfCurveMesh::MakeWavFrObj() const {
-  PrintingScopedTimer("HalfCurveMesh::MakeWavFrObj");
+  PrintingScopedTimer timer("HalfCurveMesh::MakeWavFrObj");
 
   size_t num_vertex_positions = vertex_positions_.size();
   std::vector<Vector3f> wavfr_vertices;
@@ -448,6 +471,8 @@ HalfCurveMesh::HalfCurveIndex HalfCurveMesh::CutFace(
 }
 
 void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
+  PrintingScopedTimer timer("HalfCurveMesh::LoopCut");
+
   #ifndef NDEBUG
   // "curve_idxs" must contain only matched pairs of HalfCurves
   for(HalfCurveIndex curve_idx: curve_idxs) {
@@ -510,32 +535,22 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
   std::unordered_set<VertexIndex> claimed_vertex_indices;
 
   // Splitting an Object is the same, except it's possible for a single Object
-  // to be cut by multiple, unconnected loops.
-  // TODO need to look up both old and new Object as keys?
-  //std::unordered_map<ObjectIndex, ObjectIndex> claimed_object_indices;
+  // to be cut by multiple, unconnected loops. We don't know how many new
+  // Objects are needed until all loops are cut. So when making a cut, add the
+  // new Face to "new_face_indices". These Faces, and all the Faces connected to
+  // them, will get Objects assigned at the end.
+  std::unordered_set<FaceIndex> new_face_indices;
 
   // make the cuts
   while(!curve_idxs.empty()) {
     // take an arbitrary HalfCurve and cut its associated loop
     HalfCurveIndex first_curve_idx = *(curve_idxs.begin());
 
-    Face *new_face = &get(AddFace()); // invalidates previous Face pointers
+    FaceIndex new_face_index = AddFace();
+    new_face_indices.insert(new_face_index);
+    Face *new_face = &get(new_face_index); // invalidates Face pointers
 
-    /*
-    Object *old_object = get(first_curve_idx).face->object;
-    ObjectIndex old_object_index = IndexOf(old_object);
-    if(claimed_object_indices.count(old_object_index)) {
-      if(claimed_object_indices[old_object_index] == ObjectIndex::Null) {
-        std::string name = old_object->name + "-cut";
-        // invalidates "old_object"
-        ObjectIndex new_object_index = AddObject(std::move(name));
-      }
-      new_face->object = 
-    } else {
-      new_face->object = old_object;
-      claimed_object_indices[old_object_index] = ObjectIndex::Null;
-    }
-    */
+    // may be reassigned to a new Object later
     new_face->object = get(first_curve_idx).face->object;
 
     // remember the 1st 3 vertices along the loop to get a normal vector later
@@ -654,6 +669,30 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
     } while(curve_idx != first_curve_idx);
   }
 
+  std::unordered_set<ObjectIndex> claimed_object_indices;
+  while(!new_face_indices.empty()) {
+    FaceIndex new_face_index = *(new_face_indices.begin());
+    new_face_indices.erase(new_face_index);
+    Face *new_face = &get(new_face_index);
+
+    ObjectIndex old_object_index = IndexOf(new_face->object);
+    Object *new_object = nullptr;
+    if(claimed_object_indices.count(old_object_index)) {
+      std::string name = get(old_object_index).name + "-cut";
+      // invalidates Object pointers
+      new_object = &get(AddObject(std::move(name)));
+    } else {
+      claimed_object_indices.insert(old_object_index);
+    }
+
+    std::unordered_set<Face*> faces = FindConnectedFaces(new_face);
+    for(Face *face: faces) {
+      new_face_indices.erase(IndexOf(face));
+      if(new_object)
+        face->object = new_object;
+    }
+  }
+
   #ifndef NDEBUG
   Check();
   #endif
@@ -661,7 +700,7 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
 
 std::unordered_set<HalfCurveMesh::HalfCurveIndex>
 HalfCurveMesh::Bisect(const Vector3d &normal) {
-  PrintingScopedTimer("HalfCurveMesh::Bisect");
+  PrintingScopedTimer timer("HalfCurveMesh::Bisect");
 
   // all vertices lying on the plane: both new vertices created to bisect
   // curves, and existing vertices that happened to be on the plane already
@@ -881,7 +920,7 @@ each cell's components are indexed like so:
                        4
 */
 HalfCurveMesh MakeAlignedCells() {
-  PrintingScopedTimer("MakeAlignedCells");
+  PrintingScopedTimer timer("MakeAlignedCells");
   HalfCurveMesh mesh;
 
   using VertexIndex         = HalfCurveMesh::VertexIndex;

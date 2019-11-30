@@ -138,6 +138,8 @@ public:
   void Check() const;
   #endif
 
+  std::unordered_set<Face*> FindConnectedFaces(Face *start_face);
+
   WavFrObj MakeWavFrObj() const;
 
   Vector3d CenterOfBoundingBox(FaceIndex face_index) const;
