@@ -135,7 +135,8 @@ public:
 
   // assert data structure invariants
   #ifndef NDEBUG
-  void Check() const;
+  void CheckPtrs() const;
+  void CheckAll() const;
   #endif
 
   std::unordered_set<Face*> FindConnectedFaces(Face *start_face);

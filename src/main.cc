@@ -201,9 +201,14 @@ int main() {
 
 int submain() {
   HalfCurveMesh mesh = MakeAlignedCells();
-  mesh.CutCurve(HalfCurveMesh::HalfCurveIndex(0), 0.5);
-  auto bisect_curves = mesh.Bisect(Vector3d{1,1,1});
-  mesh.LoopCut(std::move(bisect_curves));
+
+  Vector3d bisect_normals[] = {
+    Vector3d{1,1,0}, Vector3d{1,-1, 0},
+    Vector3d{1,0,1}, Vector3d{1, 0,-1},
+    Vector3d{0,1,1}, Vector3d{0, 1,-1}};
+  for(const Vector3d &normal: bisect_normals)
+    mesh.LoopCut(mesh.Bisect(normal));
+
   WavFrObj obj = mesh.MakeWavFrObj();
   std::string text = obj.Export();
   std::ofstream out("out.obj", std::ofstream::out);

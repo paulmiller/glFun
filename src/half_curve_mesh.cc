@@ -92,20 +92,28 @@ HalfCurveMesh::ObjectIndex HalfCurveMesh::AddObject(std::string name) {
 }
 
 #ifndef NDEBUG
-void HalfCurveMesh::Check() const {
-  PrintingScopedTimer timer("HalfCurveMesh::Check");
-
+void HalfCurveMesh::CheckPtrs() const {
+  for(const Vertex &vertex: vertices_) {
+    vertex_positions_.CheckPtr(vertex.position);
+    half_curves_.CheckPtr(vertex.curve);
+  }
   for(const HalfCurve &curve: half_curves_) {
     vertices_.CheckPtr(curve.vertex);
-    vertex_positions_.CheckPtr(curve.vertex->position);
-    half_curves_.CheckPtr(curve.vertex->curve);
     vertex_normals_.CheckPtr(curve.normal);
     half_curves_.CheckPtr(curve.twin_curve);
     half_curves_.CheckPtr(curve.next_curve);
     faces_.CheckPtr(curve.face);
-    objects_.CheckPtr(curve.face->object);
-    half_curves_.CheckPtr(curve.face->curve);
   }
+  for(const Face &face: faces_) {
+    half_curves_.CheckPtr(face.curve);
+    objects_.CheckPtr(face.object);
+  }
+}
+
+void HalfCurveMesh::CheckAll() const {
+  PrintingScopedTimer timer("HalfCurveMesh::CheckAll");
+
+  CheckPtrs();
 
   // Every time a mesh component with index = X is referenced by some other
   // component, mark vector[X] = true in the corresponding vector. They should
@@ -139,10 +147,14 @@ void HalfCurveMesh::Check() const {
     assert(curve.vertex != curve.twin_curve->vertex);
     assert(curve.face->object == curve.twin_curve->face->object);
 
+    // square of the minimum allowable distance between Vertices
+    // (v.len2() < 0.0001) == (v.len() < 0.01)
+    constexpr double min2 = 0.0001;
+
     const Vector3d *start = curve.twin_curve->vertex->position;
     const Vector3d *end = curve.vertex->position;
     // TODO threshold?
-    assert((*end - *start).len2() > 0.001);
+    assert((*end - *start).len2() >= min2);
 
     // compare to every other curve on the same object and ensure they're
     // different (slow)
@@ -155,10 +167,10 @@ void HalfCurveMesh::Check() const {
       const Vector3d *other_end = other_curve.vertex->position;
 
       // TODO threshold?
-      assert((*start - *other_start).len2() > 0.001 ||
-        (*end - *other_end).len2() > 0.001);
-      assert((*start - *other_end).len2() > 0.001 ||
-        (*end - *other_start).len2() > 0.001);
+      assert((*start - *other_start).len2() >= min2 ||
+        (*end - *other_end).len2() >= min2);
+      assert((*start - *other_end).len2() >= min2 ||
+        (*end - *other_start).len2() >= min2);
     }
 
     // walk the HalfCurves surrounding curve.face
@@ -367,7 +379,7 @@ HalfCurveMesh::CutCurve(HalfCurveIndex curve_index, double t) {
 
   /*
   #ifndef NDEBUG
-  Check();
+  CheckAll();
   #endif
   */
 
@@ -379,41 +391,56 @@ HalfCurveMesh::HalfCurveIndex HalfCurveMesh::CutFace(
 ) {
   assert(vertex_a_idx != vertex_b_idx);
 
+  Vertex *vertex_a = &get(vertex_a_idx);
+  Vertex *vertex_b = &get(vertex_b_idx);
+
+  HalfCurveIndex curve_a_in_index, curve_a_out_index;
+  HalfCurveIndex curve_b_in_index, curve_b_out_index;
+  {
+    // reallocs may invalidate these pointers, so confine them to this block
+    Face *face = &get(face_idx);
+    HalfCurve *curve_a_in = nullptr, *curve_a_out = nullptr;
+    HalfCurve *curve_b_in = nullptr, *curve_b_out = nullptr;
+    HalfCurve *first_curve = face->curve;
+    HalfCurve *current_curve = first_curve;
+    do {
+      if(current_curve->vertex == vertex_a) {
+        curve_a_in = current_curve;
+        curve_a_out = current_curve->next_curve;
+      }
+      if(current_curve->vertex == vertex_b) {
+        curve_b_in = current_curve;
+        curve_b_out = current_curve->next_curve;
+      }
+      current_curve = current_curve->next_curve;
+    } while(current_curve != first_curve);
+    assert(curve_a_in); assert(curve_a_out);
+    assert(curve_b_in); assert(curve_b_out);
+
+    if(curve_a_in == curve_b_out || curve_a_out == curve_b_in)
+      return HalfCurveIndex();
+
+    curve_a_in_index = IndexOf(curve_a_in);
+    curve_a_out_index = IndexOf(curve_a_out);
+    curve_b_in_index = IndexOf(curve_b_in);
+    curve_b_out_index = IndexOf(curve_b_out);
+  }
+
+  // invalidates Face, HalfCurve pointers
   FaceIndex new_face_idx = AddFace();
   // TODO support other curve types
   HalfCurveIndex new_curve_idx = AddHalfCurve();
   HalfCurveIndex new_curve_twin_idx = AddHalfCurve();
 
-  // reallocs may invalidate pointers, so add all components before getting
-  // pointers
-
-  Vertex *vertex_a = &get(vertex_a_idx);
-  Vertex *vertex_b = &get(vertex_b_idx);
   HalfCurve *new_curve = &get(new_curve_idx);
   HalfCurve *new_curve_twin = &get(new_curve_twin_idx);
   Face *face = &get(face_idx);
   Face *new_face = &get(new_face_idx);
 
-  HalfCurve *curve_a_in = nullptr, *curve_a_out = nullptr;
-  HalfCurve *curve_b_in = nullptr, *curve_b_out = nullptr;
-  HalfCurve *first_curve = face->curve;
-  HalfCurve *current_curve = first_curve;
-  do {
-    if(current_curve->vertex == vertex_a) {
-      curve_a_in = current_curve;
-      curve_a_out = current_curve->next_curve;
-    }
-    if(current_curve->vertex == vertex_b) {
-      curve_b_in = current_curve;
-      curve_b_out = current_curve->next_curve;
-    }
-    current_curve = current_curve->next_curve;
-  } while(current_curve != first_curve);
-  assert(curve_a_in); assert(curve_a_out);
-  assert(curve_b_in); assert(curve_b_out);
-
-  if(curve_a_in == curve_b_out || curve_a_out == curve_b_in)
-    return HalfCurveIndex();
+  HalfCurve *curve_a_in = &get(curve_a_in_index);
+  HalfCurve *curve_a_out = &get(curve_a_out_index);
+  HalfCurve *curve_b_in = &get(curve_b_in_index);
+  HalfCurve *curve_b_out = &get(curve_b_out_index);
 
   // the face now looks like this:
   //
@@ -445,7 +472,7 @@ HalfCurveMesh::HalfCurveIndex HalfCurveMesh::CutFace(
   curve_a_in->next_curve = new_curve;
   curve_b_in->next_curve = new_curve_twin;
 
-  current_curve = curve_a_out;
+  HalfCurve *current_curve = curve_a_out;
   do {
     current_curve->face = new_face;
     current_curve = current_curve->next_curve;
@@ -463,7 +490,7 @@ HalfCurveMesh::HalfCurveIndex HalfCurveMesh::CutFace(
 
   /*
   #ifndef NDEBUG
-  Check();
+  CheckAll();
   #endif
   */
 
@@ -693,9 +720,11 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
     }
   }
 
+  /*
   #ifndef NDEBUG
-  Check();
+  CheckAll();
   #endif
+  */
 }
 
 std::unordered_set<HalfCurveMesh::HalfCurveIndex>
@@ -769,6 +798,10 @@ HalfCurveMesh::Bisect(const Vector3d &normal) {
     }
   }
 
+  #ifndef NDEBUG
+  CheckAll();
+  #endif
+
   std::vector<VertexIndex> planar_vertex_indices_on_this_face;
   size_t face_num = faces_.size();
   for(FaceIndex face_index(0); face_index < face_num; ++face_index) {
@@ -796,15 +829,13 @@ HalfCurveMesh::Bisect(const Vector3d &normal) {
         if(!new_curve_index.IsNull()) {
           planar_curve_indices.insert(new_curve_index);
           planar_curve_indices.insert(IndexOf(get(new_curve_index).twin_curve));
-        } else {
-          // TODO remove
-          std::cout << "-1\n";
         }
       } else if(num_vertices_on_plane > 2) {
         // TODO support concave faces
         std::cout << "HalfCurveMesh::Bisect skipping face at "
-          << CenterOfBoundingBox(face_index) << " with " << num_vertices_on_plane
-          << " of " << num_vertices << " on the plane\n";
+          << CenterOfBoundingBox(face_index) << " with "
+          << num_vertices_on_plane << " of " << num_vertices
+          << " on the plane\n";
       }
     }
 
@@ -812,7 +843,7 @@ HalfCurveMesh::Bisect(const Vector3d &normal) {
   }
 
   #ifndef NDEBUG
-  Check();
+  CheckAll();
   #endif
 
   return planar_curve_indices;
@@ -1052,7 +1083,7 @@ HalfCurveMesh MakeAlignedCells() {
   }
 
   #ifndef NDEBUG
-  mesh.Check();
+  mesh.CheckAll();
   #endif
 
   return mesh;
