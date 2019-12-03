@@ -765,16 +765,17 @@ HalfCurveMesh::Bisect(const Vector3d &normal) {
     //        a⋅Dx + b⋅Dy + c⋅Dz       dot(normal, D)
 
     // if the line parallel to the plane, then "normal" and D are at right
-    // angles, and denominator == 0
-    double denominator = dot(normal, D);
-    if(denominator == 0) {
-      // is the line inside the plane?
-      if(S.x + S.y + S.z == 0) {
+    // angles, and dot_D == 0
+    double dot_D = dot(normal, D);
+    // if the dot_D == 0 && dot_S == 0, then the line is inside the plane
+    double dot_S = dot(normal, S);
+    if(dot_D == 0) {
+      if(dot_S == 0) {
         planar_curve_indices.insert(curve_index);
         planar_curve_indices.insert(IndexOf(curve->twin_curve));
       }
     } else {
-      double t = - dot(normal, S) / denominator;
+      double t = - dot_S / dot_D;
 
       // TODO threshold?
       constexpr double epsilon = 0.0001;

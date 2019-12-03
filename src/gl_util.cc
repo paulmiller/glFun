@@ -206,6 +206,33 @@ GLuint MakeColorVbo(const TriMesh &m) {
   return color_buffer_id;
 }
 
+// TODO deduplicate Vbo code
+GLuint MakeLinesVbo(const std::vector<std::pair<Vector3f,Vector3f>> &lines) {
+  size_t float_num = lines.size() * 3 * 2;
+  std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);
+
+  size_t i = 0;
+  for(const auto &line: lines) {
+    const Vector3f &start = line.first;
+    vbo[i++] = start.x;
+    vbo[i++] = start.y;
+    vbo[i++] = start.z;
+    const Vector3f &end = line.second;
+    vbo[i++] = end.x;
+    vbo[i++] = end.y;
+    vbo[i++] = end.z;
+  }
+  assert(i == float_num);
+
+  GLuint vert_buffer_id;
+  glGenBuffers(1, &vert_buffer_id);
+  glBindBuffer(GL_ARRAY_BUFFER, vert_buffer_id);
+  glBufferData(GL_ARRAY_BUFFER, float_num * sizeof(GLfloat), vbo.get(),
+    GL_STATIC_DRAW);
+
+  return vert_buffer_id;
+}
+
 GLuint MakeRaysVbo(const std::vector<Ray> &rays) {
   int float_num = rays.size() * 3 * 2;
   std::unique_ptr<GLfloat[]> vbo(new GLfloat[float_num]);

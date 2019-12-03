@@ -135,10 +135,8 @@ private:
   GLint sampler_uniform_location_;
 };
 
-class DrawableRays : public Drawable {
+class DrawableLinesBase : public Drawable {
 public:
-  DrawableRays(std::vector<Ray> &&rays) : rays_(std::move(rays)) {}
-
   void SetUp() override {
     GLuint vert_shader_id =
       LoadShader("src/lines_vert.glsl", GL_VERTEX_SHADER);
@@ -149,12 +147,7 @@ public:
     glDeleteShader(frag_shader_id);
     program_id_ = program_id;
     mvp_uniform_location_ = glGetUniformLocation(program_id, "mvp");
-
-    vbos_.reserve(1);
-    vbos_.push_back({MakeRaysVbo(rays_), 3});
-
-    num_verts_ = rays_.size() * 2;
-
+    SetUpVbo();
     assert(CheckGl());
   }
 
@@ -169,10 +162,58 @@ public:
     GenericTearDown();
   }
 
+protected:
+  virtual void SetUpVbo() = 0;
+
+  GLsizei num_verts_ = 0;
+};
+
+class DrawableLines : public DrawableLinesBase {
+public:
+  DrawableLines(std::vector<std::pair<Vector3f,Vector3f>> lines) :
+    lines_(std::move(lines)) {}
+
+protected:
+  void SetUpVbo() override {
+    vbos_.reserve(1);
+    vbos_.push_back({MakeLinesVbo(lines_), 3});
+    num_verts_ = lines_.size() * 2;
+  }
+
+private:
+  std::vector<std::pair<Vector3f,Vector3f>> lines_;
+};
+
+class DrawableRays : public DrawableLinesBase {
+public:
+  DrawableRays(std::vector<Ray> rays) : rays_(std::move(rays)) {}
+
+protected:
+  void SetUpVbo() override {
+    vbos_.reserve(1);
+    vbos_.push_back({MakeRaysVbo(rays_), 3});
+    num_verts_ = rays_.size() * 2;
+  }
+
 private:
   GLsizei num_verts_;
   std::vector<Ray> rays_;
 };
+
+DrawableLines MakeDrawableHalfCurves(
+  const HalfCurveMesh &mesh,
+  const std::unordered_set<HalfCurveMesh::HalfCurveIndex> curve_indices
+) {
+  std::vector<std::pair<Vector3f,Vector3f>> lines;
+  for(const HalfCurveMesh::HalfCurveIndex &curve_index: curve_indices) {
+    const HalfCurveMesh::HalfCurve *curve = &mesh[curve_index];
+    const Vector3d &start = *(curve->twin_curve->vertex->position);
+    const Vector3d &end = *(curve->vertex->position);
+    lines.push_back(std::make_pair(static_cast<Vector3f>(start),
+                                   static_cast<Vector3f>(end)));
+  }
+  return DrawableLines(std::move(lines));
+}
 
 int submain();
 
@@ -200,21 +241,6 @@ int main() {
 #include <cmath>
 
 int submain() {
-  HalfCurveMesh mesh = MakeAlignedCells();
-
-  Vector3d bisect_normals[] = {
-    Vector3d{1,1,0}, Vector3d{1,-1, 0},
-    Vector3d{1,0,1}, Vector3d{1, 0,-1},
-    Vector3d{0,1,1}, Vector3d{0, 1,-1}};
-  for(const Vector3d &normal: bisect_normals)
-    mesh.LoopCut(mesh.Bisect(normal));
-
-  WavFrObj obj = mesh.MakeWavFrObj();
-  std::string text = obj.Export();
-  std::ofstream out("out.obj", std::ofstream::out);
-  out << text;
-  out.close();
-
   assert(CheckGl());
 
   glfwWindowHint(GLFW_SAMPLES, 4);
@@ -230,8 +256,6 @@ int submain() {
   window.addObserver(&viewport_control);
   window.addObserver(&camera_control);
   window.create(default_width, default_height, "toy");
-
-  assert(CheckGl());
 
   assert(CheckGl());
 
@@ -264,6 +288,32 @@ int submain() {
 
   assert(CheckGl());
 
+  HalfCurveMesh mesh = MakeAlignedCells();
+
+  /*
+  Vector3d bisect_normals[] = {
+    Vector3d{1,1,0}, Vector3d{1,-1, 0},
+    Vector3d{1,0,1}, Vector3d{1, 0,-1},
+    Vector3d{0,1,1}, Vector3d{0, 1,-1}};
+  for(const Vector3d &normal: bisect_normals)
+    mesh.LoopCut(mesh.Bisect(normal));
+  */
+  auto bisect_curve_indices = mesh.Bisect(Vector3d{1,1,0});
+  DrawableLines lines =
+    MakeDrawableHalfCurves(mesh, std::move(bisect_curve_indices));
+  lines.SetCameraControl(&camera_control);
+  lines.SetUp();
+
+  /*
+  WavFrObj obj = mesh.MakeWavFrObj();
+  std::string text = obj.Export();
+  std::ofstream out("out.obj", std::ofstream::out);
+  out << text;
+  out.close();
+  */
+
+  assert(CheckGl());
+
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_GREATER);
 
@@ -277,6 +327,8 @@ int submain() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     assert(CheckGl());
     axes.Draw();
+    assert(CheckGl());
+    lines.Draw();
     assert(CheckGl());
     glfwSwapBuffers(window);
     glfwPollEvents();

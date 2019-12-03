@@ -8,6 +8,7 @@
 #include <GL/glew.h> // must precede gl, glfw
 #include <GLFW/glfw3.h>
 
+#include <utility>
 #include <vector>
 
 // returns false if there have been any GL errors
@@ -24,6 +25,7 @@ GLuint MakeVertexVbo(const TriMesh &m);
 GLuint MakeUvVbo(const TriMesh &m);
 GLuint MakeNormVbo(const TriMesh &m);
 GLuint MakeColorVbo(const TriMesh &m);
+GLuint MakeLinesVbo(const std::vector<std::pair<Vector3f,Vector3f>> &lines);
 GLuint MakeRaysVbo(const std::vector<Ray> &rays);
 
 // turn a png file into a GL texture

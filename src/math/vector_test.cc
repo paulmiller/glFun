@@ -31,6 +31,11 @@ TEST_CASE("Vector initialization") {
   REQUIRE(v4_0.w == 0);
 }
 
+TEST_CASE("Vector cast") {
+  REQUIRE(Vector3f{1,2,3} == static_cast<Vector3f>(Vector3d{1,2,3}));
+  REQUIRE(Vector4f{1,2,3,4} == static_cast<Vector4f>(Vector4d{1,2,3,4}));
+}
+
 TEST_CASE("Vector equality") {
   REQUIRE(Vector3<int>{1,2,3} == Vector3<int>{1,2,3});
   REQUIRE(Vector3<int>{1,2,3} != Vector3<int>{0,2,3});

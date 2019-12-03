@@ -43,6 +43,12 @@ class Vector3 {
 public:
   T x, y, z;
 
+  template<typename T2>
+  explicit operator Vector3<T2>() const {
+    return Vector3<T2> {
+      static_cast<T2>(x), static_cast<T2>(y), static_cast<T2>(z) };
+  }
+
   bool isfinite() const {
     return std::isfinite(x) && std::isfinite(y) && std::isfinite(z);
   }
@@ -223,6 +229,13 @@ template<typename T>
 class Vector4 {
 public:
   T x, y, z, w;
+
+  template<typename T2>
+  explicit operator Vector4<T2>() const {
+    return Vector4<T2> {
+      static_cast<T2>(x), static_cast<T2>(y),
+      static_cast<T2>(z), static_cast<T2>(w) };
+  }
 
   bool isfinite() const {
     return std::isfinite(x) && std::isfinite(y) &&
