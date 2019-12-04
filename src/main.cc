@@ -290,27 +290,25 @@ int submain() {
 
   HalfCurveMesh mesh = MakeAlignedCells();
 
-  /*
   Vector3d bisect_normals[] = {
     Vector3d{1,1,0}, Vector3d{1,-1, 0},
     Vector3d{1,0,1}, Vector3d{1, 0,-1},
     Vector3d{0,1,1}, Vector3d{0, 1,-1}};
   for(const Vector3d &normal: bisect_normals)
     mesh.LoopCut(mesh.Bisect(normal));
-  */
+  /*
   auto bisect_curve_indices = mesh.Bisect(Vector3d{1,1,0});
   DrawableLines lines =
     MakeDrawableHalfCurves(mesh, std::move(bisect_curve_indices));
   lines.SetCameraControl(&camera_control);
   lines.SetUp();
+  */
 
-  /*
   WavFrObj obj = mesh.MakeWavFrObj();
   std::string text = obj.Export();
   std::ofstream out("out.obj", std::ofstream::out);
   out << text;
   out.close();
-  */
 
   assert(CheckGl());
 
@@ -328,8 +326,10 @@ int submain() {
     assert(CheckGl());
     axes.Draw();
     assert(CheckGl());
+    /*
     lines.Draw();
     assert(CheckGl());
+    */
     glfwSwapBuffers(window);
     glfwPollEvents();
     assert(CheckGl());

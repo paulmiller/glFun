@@ -507,7 +507,7 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
     assert(curve_idxs.count(twin_idx));
   }
 
-  // ensure every Vertex has 0 or 2 ingoing and outgoing curves in "curve_idxs"
+  // ensure every Vertex has 0 or 2 incoming and outgoing curves in "curve_idxs"
   // i.e. there is at most 1 cutting path through each Vertex
   for(Vertex &vertex: vertices_) {
     int outgoing_cut_curves = 0, incoming_cut_curves = 0;
@@ -731,6 +731,56 @@ std::unordered_set<HalfCurveMesh::HalfCurveIndex>
 HalfCurveMesh::Bisect(const Vector3d &normal) {
   PrintingScopedTimer timer("HalfCurveMesh::Bisect");
 
+  // Objects which should be ignored, because they don't pass through the
+  // bisecting plane (though they may have components inside the plane)
+  std::unordered_set<ObjectIndex> ignored_objects;
+
+  // populate "ignored_objects"
+  // TODO curved HalfCurves may pass through plane despite all Vertices being on
+  // one side
+  {
+    // an Object's location relative to the bisecting plane
+    enum Location : char {
+      Unknown = 0,
+      InFront, // all Vertices are on or in front of the plane
+      Behind,  // all Vertices are on or behind the plane
+      Through  // Object has Vertices both in front and behind
+    };
+
+    // Find each Object's location by checking all its Vertices. Objects
+    // contained entirely inside the plane will remain "Unknown".
+    size_t objects_size = objects_.size();
+    std::vector<Location> object_locations(objects_size);
+    for(const Vertex &vertex: vertices_) {
+      size_t object_index = IndexOf(vertex.curve->face->object).value;
+      Location object_location = object_locations[object_index];
+
+      // if we've already found this Object's Vertices on both sides, don't
+      // check the remaining Vertices
+      if(object_location == Through) continue;
+
+      double d = dot(normal, *(vertex.position));
+      if(d == 0 || std::isnan(d)) continue;
+      Location vertex_location = (d < 0 ? Behind : InFront);
+
+      if(object_location != vertex_location) {
+        if(object_location == Unknown) {
+          // this Vertex is on the same side as the previous Vertices
+          object_locations[object_index] = vertex_location;
+        } else {
+          // this Vertex is on a different side as the previous Vertices
+          object_locations[object_index] = Through;
+        }
+      }
+    }
+
+    // ignore Objects which don't pass through the plane
+    for(size_t i = 0; i < objects_size; i++) {
+      if(object_locations[i] != Through)
+        ignored_objects.insert(ObjectIndex(i));
+    }
+  }
+
   // all vertices lying on the plane: both new vertices created to bisect
   // curves, and existing vertices that happened to be on the plane already
   std::unordered_set<VertexIndex> planar_vertex_indices;
@@ -746,6 +796,7 @@ HalfCurveMesh::Bisect(const Vector3d &normal) {
   size_t curve_num = half_curves_.size();
   for(HalfCurveIndex curve_index(0); curve_index < curve_num; ++curve_index) {
     HalfCurve *curve = &get(curve_index);
+    if(ignored_objects.count(IndexOf(curve->face->object))) continue;
     if(checked_twin_curves.count(curve)) continue;
     checked_twin_curves.insert(curve->twin_curve);
 
