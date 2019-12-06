@@ -1,13 +1,14 @@
 #include "camera_control.h"
 #include "gl_util.h"
 #include "gl_viewport_control.h"
-#include "half_curve_mesh.h"
+#include "half_edge_mesh.h"
 #include "image.h"
 #include "image_png.h"
 #include "mesh.h"
 #include "mesh_obj.h"
 #include "ohno.h"
 #include "ray.h"
+#include "scoped_timer.h"
 #include "util.h"
 
 #include <cassert>
@@ -200,15 +201,15 @@ private:
   std::vector<Ray> rays_;
 };
 
-DrawableLines MakeDrawableHalfCurves(
-  const HalfCurveMesh &mesh,
-  const std::unordered_set<HalfCurveMesh::HalfCurveIndex> curve_indices
+DrawableLines MakeDrawableHalfEdges(
+  const HalfEdgeMesh &mesh,
+  const std::unordered_set<HalfEdgeMesh::HalfEdgeIndex> edge_indices
 ) {
   std::vector<std::pair<Vector3f,Vector3f>> lines;
-  for(const HalfCurveMesh::HalfCurveIndex &curve_index: curve_indices) {
-    const HalfCurveMesh::HalfCurve *curve = &mesh[curve_index];
-    const Vector3d &start = *(curve->twin_curve->vertex->position);
-    const Vector3d &end = *(curve->vertex->position);
+  for(const HalfEdgeMesh::HalfEdgeIndex &edge_index: edge_indices) {
+    const HalfEdgeMesh::HalfEdge *edge = &mesh[edge_index];
+    const Vector3d &start = *(edge->twin_edge->vertex->position);
+    const Vector3d &end = *(edge->vertex->position);
     lines.push_back(std::make_pair(static_cast<Vector3f>(start),
                                    static_cast<Vector3f>(end)));
   }
@@ -288,28 +289,33 @@ int submain() {
 
   assert(CheckGl());
 
-  HalfCurveMesh mesh = MakeAlignedCells();
+  HalfEdgeMesh mesh = MakeAlignedCells();
 
-  Vector3d bisect_normals[] = {
-    Vector3d{1,1,0}, Vector3d{1,-1, 0},
-    Vector3d{1,0,1}, Vector3d{1, 0,-1},
-    Vector3d{0,1,1}, Vector3d{0, 1,-1}};
-  for(const Vector3d &normal: bisect_normals)
-    mesh.LoopCut(mesh.Bisect(normal));
+  {
+    PrintingScopedTimer timer("mesh");
+
+    Vector3d bisect_normals[] = {
+      Vector3d{1,1,0}, Vector3d{1,-1, 0},
+      Vector3d{1,0,1}, Vector3d{1, 0,-1},
+      Vector3d{0,1,1}, Vector3d{0, 1,-1}};
+    for(const Vector3d &normal: bisect_normals)
+      mesh.LoopCut(mesh.Bisect(normal));
+    /*
+    auto bisect_edge_indices = mesh.Bisect(Vector3d{1,1,0});
+    DrawableLines lines =
+      MakeDrawableHalfEdges(mesh, std::move(bisect_edge_indices));
+    lines.SetCameraControl(&camera_control);
+    lines.SetUp();
+    */
+
+    WavFrObj obj = mesh.MakeWavFrObj();
+    std::string text = obj.Export();
+    std::ofstream out("out.obj", std::ofstream::out);
+    out << text;
+    out.close();
+  }
+
   /*
-  auto bisect_curve_indices = mesh.Bisect(Vector3d{1,1,0});
-  DrawableLines lines =
-    MakeDrawableHalfCurves(mesh, std::move(bisect_curve_indices));
-  lines.SetCameraControl(&camera_control);
-  lines.SetUp();
-  */
-
-  WavFrObj obj = mesh.MakeWavFrObj();
-  std::string text = obj.Export();
-  std::ofstream out("out.obj", std::ofstream::out);
-  out << text;
-  out.close();
-
   assert(CheckGl());
 
   glEnable(GL_DEPTH_TEST);
@@ -326,10 +332,10 @@ int submain() {
     assert(CheckGl());
     axes.Draw();
     assert(CheckGl());
-    /*
+    / *
     lines.Draw();
     assert(CheckGl());
-    */
+    * /
     glfwSwapBuffers(window);
     glfwPollEvents();
     assert(CheckGl());
@@ -341,6 +347,7 @@ int submain() {
   glDeleteVertexArrays(1, &array_id);
 
   assert(CheckGl());
+  */
 
   return 0;
 }

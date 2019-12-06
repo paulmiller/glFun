@@ -29,7 +29,7 @@ set(common_sources
   gl_util.cc
   gl_viewport_control.cc
   glfw_window.cc
-  half_curve_mesh.cc
+  half_edge_mesh.cc
   image.cc
   image_hdr.cc
   image_png.cc
