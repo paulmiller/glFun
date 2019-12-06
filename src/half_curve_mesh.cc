@@ -678,7 +678,7 @@ void HalfCurveMesh::LoopCut(std::unordered_set<HalfCurveIndex> curve_idxs) {
     Vector3d &a = sample_vertex_positions[0];
     Vector3d &b = sample_vertex_positions[1];
     Vector3d &c = sample_vertex_positions[2];
-    Vector3d face_normal = cross(b - a, c - a).unit();
+    Vector3d face_normal = cross(c - a, b - a).unit();
     assert(face_normal.isfinite());
     // invalidates previous normal pointers
     Vector3d *new_normal = &get(AddVertexNormal(face_normal));
