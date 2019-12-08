@@ -216,6 +216,14 @@ inline T angleBetween(const Vector3<T> &a, const Vector3<T> &b) {
   return acos(x);
 }
 
+// angle interplotation. https://en.wikipedia.org/wiki/Slerp
+template<typename T>
+Vector3<T> Slerp(T t, Vector3<T> p0, Vector3<T> p1) {
+  constexpr T one = static_cast<T>(1);
+  T angle = angleBetween(p0, p1);
+  return (p0 * sin((one-t)*angle) + p1 * sin(t*angle)) / sin(angle);
+}
+
 // --- cout << Vector3 ------------------------------------------------------ //
 
 template<typename T>

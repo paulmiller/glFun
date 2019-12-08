@@ -1,8 +1,8 @@
 #include "matrix_factories.h"
 
+#include "approx_object.h"
 #include "util.h"
 #include "vector.h"
-#include "matrix_test_util.h"
 
 #include "catch.h"
 
@@ -38,11 +38,11 @@ TEST_CASE("RotationMatrix4x4") {
   using namespace Catch::literals;
 
   Matrix<double,4,4> actual;
-  ApproxMatrix<4,4> expected;
-  expected.SetMargin(1e-10);
+  ApproxMatrix4x4d expected(Matrix4x4d{});
+  expected.margin(1e-10);
 
   // quarter turns around the X axis
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 1, 0, 0, 0},
     { 0, 0,-1, 0},
     { 0, 1, 0, 0},
@@ -51,7 +51,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
   actual = RotationMatrix4x4(-UnitX_Vector3d, -Tau_d/4);
   REQUIRE(actual == expected);
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 1, 0, 0, 0},
     { 0, 0, 1, 0},
     { 0,-1, 0, 0},
@@ -63,7 +63,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
 
   // quarter turns around the Y axis
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 0, 0, 1, 0},
     { 0, 1, 0, 0},
     {-1, 0, 0, 0},
@@ -72,7 +72,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
   actual = RotationMatrix4x4(-UnitY_Vector3d, -Tau_d/4);
   REQUIRE(actual == expected);
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 0, 0,-1, 0},
     { 0, 1, 0, 0},
     { 1, 0, 0, 0},
@@ -83,7 +83,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
 
   // quarter turns around the around Z axis
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 0,-1, 0, 0},
     { 1, 0, 0, 0},
     { 0, 0, 1, 0},
@@ -92,7 +92,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
   actual = RotationMatrix4x4(-UnitZ_Vector3d, -Tau_d/4);
   REQUIRE(actual == expected);
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 0, 1, 0, 0},
     {-1, 0, 0, 0},
     { 0, 0, 1, 0},
@@ -103,7 +103,7 @@ TEST_CASE("RotationMatrix4x4") {
   REQUIRE(actual == expected);
 
   // 1/3 turn around <1,1,1>
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 0, 0, 1, 0},
     { 1, 0, 0, 0},
     { 0, 1, 0, 0},
@@ -113,7 +113,7 @@ TEST_CASE("RotationMatrix4x4") {
 
   // no-op turns around an arbitrary axis
   Vector3d axis = Vector3d{1,2,3}.unit();
-  expected.matrix = Matrix4x4d {{
+  expected.value = Matrix4x4d {{
     { 1, 0, 0, 0},
     { 0, 1, 0, 0},
     { 0, 0, 1, 0},

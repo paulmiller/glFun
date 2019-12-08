@@ -1,7 +1,7 @@
 #include "vector.h"
 
 #include "util.h"
-#include "vector_test_util.h"
+#include "approx_object.h"
 
 #include "catch.h"
 
@@ -145,8 +145,8 @@ TEST_CASE("Vector3 cross product") {
 
 TEST_CASE("Vector3 projection") {
   Vector3d v {1,1,1};
-  REQUIRE(proj(v, Vector3d{10,0,0}) == ApproxVector3(Vector3d{1,0,0}));
-  REQUIRE(proj(v, Vector3d{0,0.5,0.5}) == ApproxVector3(Vector3d{0,1,1}));
+  REQUIRE(proj(v, Vector3d{10,0,0}) == ApproxVector3d(Vector3d{1,0,0}));
+  REQUIRE(proj(v, Vector3d{0,0.5,0.5}) == ApproxVector3d(Vector3d{0,1,1}));
 }
 
 TEST_CASE("Vector3 angles") {
@@ -159,4 +159,34 @@ TEST_CASE("Vector3 angles") {
     Approx(Tau_d/4));
   REQUIRE(angleBetween(Vector3d{1,1,1}, Vector3d{-1,-1,-1}) ==
     Approx(Tau_d/2));
+}
+
+TEST_CASE("Vector3 slerp") {
+  REQUIRE(Slerp(0.0, UnitX_Vector3d, UnitY_Vector3d) ==
+    ApproxVector3d(UnitX_Vector3d));
+  REQUIRE(Slerp(1.0, UnitX_Vector3d, UnitY_Vector3d) ==
+    ApproxVector3d(UnitY_Vector3d));
+  REQUIRE(Slerp(2.0, UnitX_Vector3d, UnitY_Vector3d) ==
+    ApproxVector3d(-UnitX_Vector3d).margin(1e-10));
+
+  double r2 = std::sqrt(2);
+  double r3 = std::sqrt(3);
+  double r2d2 = r2 / 2; // beep boop
+
+  REQUIRE(Slerp(0.5, UnitX_Vector3d, UnitY_Vector3d) ==
+    ApproxVector3d(Vector3d{r2d2,r2d2,0}));
+  REQUIRE(Slerp(0.5, UnitX_Vector3d, UnitZ_Vector3d) ==
+    ApproxVector3d(Vector3d{r2d2,0,r2d2}));
+  REQUIRE(Slerp(0.5, UnitY_Vector3d, UnitZ_Vector3d) ==
+    ApproxVector3d(Vector3d{0,r2d2,r2d2}));
+
+  REQUIRE(Slerp(0.5, -UnitX_Vector3d, -UnitY_Vector3d) ==
+    ApproxVector3d(-Vector3d{r2d2,r2d2,0}));
+  REQUIRE(Slerp(0.5, 2*UnitX_Vector3d, 2*UnitY_Vector3d) ==
+    ApproxVector3d(Vector3d{r2,r2,0}));
+
+  REQUIRE(Slerp(0.5, Vector3d{1,1,1}, Vector3d{-1,-1,1}) ==
+    ApproxVector3d(Vector3d{0,0,r3}));
+  REQUIRE(Slerp(0.5, Vector3d{-1,-1,1}, Vector3d{1,1,1}) ==
+    ApproxVector3d(Vector3d{0,0,r3}));
 }

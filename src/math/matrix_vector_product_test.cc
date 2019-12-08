@@ -1,7 +1,5 @@
 #include "matrix_vector_product.h"
 
-#include "vector_test_util.h"
-
 #include "catch.h"
 
 TEST_CASE("matrix * vector") {

@@ -1,7 +1,5 @@
 #include "matrix.h"
 
-#include "matrix_test_util.h"
-
 #include "catch.h"
 
 namespace {

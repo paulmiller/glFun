@@ -2,7 +2,7 @@
 
 #include "catch.h"
 
-ANON_TEST_CASE() {
+TEST_CASE("Image initialization") {
   Image a(10, 10, Pixel::V8_T);
   *static_cast<char*>(a.getPixelPtr(5, 5)) = 'A';
 

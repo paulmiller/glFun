@@ -5,7 +5,6 @@
 #include "catch.h"
 
 #include <limits>
-#include <regex>
 
 TEST_CASE("PrettyPrintNumBytes") {
   using T = function_traits<decltype(PrettyPrintNumBytes)>::argument<0>::type;
@@ -49,6 +48,6 @@ TEST_CASE("PrettyPrintNumBytes") {
   REQUIRE(PrettyPrintNumBytes(G - 512*K    ) == "1 GiB");
   REQUIRE(PrettyPrintNumBytes(G - 512*K + 1) == "1 GiB");
 
-  constexpr T Max = std::numeric_limits<T>::max();
-  REQUIRE(std::regex_match(PrettyPrintNumBytes(Max), std::regex("\\d+ [A-Z]iB")));
+  constexpr T max = std::numeric_limits<T>::max();
+  REQUIRE_THAT(PrettyPrintNumBytes(max), Catch::Matches("\\d+ [A-Z]iB"));
 }

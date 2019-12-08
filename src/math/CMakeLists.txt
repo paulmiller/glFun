@@ -19,7 +19,6 @@ target_include_directories(math PUBLIC ./)
 
 add_executable(math_test ${test_sources})
 target_include_directories(math_test PRIVATE ./)
-# for approx_container.h & catch_main.cc
-target_include_directories(math_test PRIVATE ../)
+target_include_directories(math_test PRIVATE ../) # for catch_main.cc
 target_link_libraries(math_test math)
 target_link_libraries(math_test catch)
