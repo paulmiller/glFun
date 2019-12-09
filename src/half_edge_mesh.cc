@@ -981,6 +981,215 @@ const double CylinderRadii[] = { R2D2, R10D4, R3D2, 1 };
 } // namespace
 
 /*
+an icosohedron's vertices make 3 golden rectangles:
+
+            * - - - - - - - - *
+            |                 |
+            |                 |
+            |                 |
+            |                 |
+     * - - -|        /        |- - - - - - *
+    /       |       /         |           /
+   /        |      /          |          /
+  /               /                     /
+ /               *                     /
+* - - - - - - - -|  - - - - - - - - - *
+            |    |            |
+            |    |   /        |
+            |    |  /         |
+            |    | /          |
+            * - -|/ - - - - - *
+                 *
+
+we number the vertices like so:
+
+       * 0
+      /|                            8 * - - - * 9
+     / |                              |       |
+    /  |      4 * - - - - - - - * 7   |       |
+   /   * 1     /               /      |       |
+3 *   /       /               /       |       |
+  |  /     5 * - - - - - - - * 6      |       |
+  | /                                 |       |
+  |/                               11 * - - - * 10
+2 *           Z
+              | X
+              |/
+          Y - *
+
+for a 2 x 2⋅φ rectangle, vertex 0 is at coordinates:
+
+  ( φ, 0, 1 )
+
+with distance from the origin:
+   ________
+  √ 1² + φ²
+
+to scale vertices down onto a unit sphere, divide everything by that distance,
+and call the resulting values L and S:
+                       ________          ________
+  ( L, 0, S ) = ( φ ÷ √ 1² + φ², 0, 1 ÷ √ 1² + φ² )
+*/
+HalfEdgeMesh MakeGeoSphere(int segments) {
+  PrintingScopedTimer timer("MakeGeoSphere");
+  // currently just makes icosohedrons; TODO subdivide by "segements"
+  assert(segments >= 1);
+
+  constexpr double L = 0.8506508083520399321815404970630110722404;
+  constexpr double S = 0.5257311121191336060256690848478766072855;
+  Vector3d icosohedron_vertices[12] = {
+    Vector3d{  L,  0,  S },
+    Vector3d{  L,  0, -S },
+    Vector3d{ -L,  0, -S },
+    Vector3d{ -L,  0,  S },
+    Vector3d{  S,  L,  0 },
+    Vector3d{ -S,  L,  0 },
+    Vector3d{ -S, -L,  0 },
+    Vector3d{  S, -L,  0 },
+    Vector3d{  0,  S,  L },
+    Vector3d{  0, -S,  L },
+    Vector3d{  0, -S, -L },
+    Vector3d{  0,  S, -L },
+  };
+
+  int icosohedron_faces[20][3] = {
+    { 0, 1, 4},
+    { 0, 7, 1},
+
+    { 2, 3, 5},
+    { 2, 6, 3},
+
+    { 4, 5, 8},
+    { 4,11, 5},
+
+    { 6, 7, 9},
+    { 6,10, 7},
+
+    { 0, 4, 8},
+    { 0, 9, 7},
+    { 0, 8, 9},
+
+    { 3, 9, 8},
+    { 3, 8, 5},
+    { 3, 6, 9},
+
+    { 1,11, 4},
+    { 1, 7,10},
+    { 1,10,11},
+
+    { 2,11,10},
+    { 2, 5,11},
+    { 2,10, 6},
+  };
+
+  using VertexIndex         = HalfEdgeMesh::VertexIndex;
+  using VertexNormalIndex   = HalfEdgeMesh::VertexNormalIndex;
+  using VertexPositionIndex = HalfEdgeMesh::VertexPositionIndex;
+  using HalfEdgeIndex       = HalfEdgeMesh::HalfEdgeIndex;
+  using FaceIndex           = HalfEdgeMesh::FaceIndex;
+  using ObjectIndex         = HalfEdgeMesh::ObjectIndex;
+
+  using Vertex   = HalfEdgeMesh::Vertex;
+  using HalfEdge = HalfEdgeMesh::HalfEdge;
+  using Face     = HalfEdgeMesh::Face;
+  using Object   = HalfEdgeMesh::Object;
+
+  using NormalType = HalfEdgeMesh::NormalType;
+
+  HalfEdgeMesh mesh;
+
+  ObjectIndex object = mesh.AddObject("sphere");
+  Object *object_ptr = &mesh[object];
+
+  VertexPositionIndex positions[12];
+  VertexNormalIndex normals[12];
+  VertexIndex vertices[12];
+  for(int i = 0; i < 12; i++) {
+    // on a unit sphere, position and normal vectors are identical
+    positions[i] = mesh.AddVertexPosition(icosohedron_vertices[i]);
+    normals[i] = mesh.AddVertexNormal(icosohedron_vertices[i]);
+
+    vertices[i] = mesh.AddVertex();
+    mesh[vertices[i]].position = &mesh[positions[i]];
+  }
+
+  std::unordered_map<std::pair<VertexIndex,VertexIndex>, HalfEdgeIndex> edges;
+  for(int i = 0; i < 20; i++) {
+    int a_number = icosohedron_faces[i][0];
+    int b_number = icosohedron_faces[i][1];
+    int c_number = icosohedron_faces[i][2];
+
+    VertexIndex a = vertices[a_number];
+    VertexIndex b = vertices[b_number];
+    VertexIndex c = vertices[c_number];
+    Vertex *a_ptr = &mesh[a];
+    Vertex *b_ptr = &mesh[b];
+    Vertex *c_ptr = &mesh[c];
+
+    HalfEdgeIndex ab = mesh.AddHalfEdge();
+    HalfEdgeIndex bc = mesh.AddHalfEdge();
+    HalfEdgeIndex ca = mesh.AddHalfEdge();
+    HalfEdge *ab_ptr = &mesh[ab];
+    HalfEdge *bc_ptr = &mesh[bc];
+    HalfEdge *ca_ptr = &mesh[ca];
+    edges.insert(std::make_pair(std::make_pair(a,b), ab));
+    edges.insert(std::make_pair(std::make_pair(b,c), bc));
+    edges.insert(std::make_pair(std::make_pair(c,a), ca));
+
+    if(a_ptr->edge == nullptr) a_ptr->edge = ab_ptr;
+    if(b_ptr->edge == nullptr) b_ptr->edge = bc_ptr;
+    if(c_ptr->edge == nullptr) c_ptr->edge = ca_ptr;
+
+    auto ba_iter = edges.find(std::make_pair(b,a));
+    if(ba_iter != edges.end()) {
+      HalfEdge *ba_ptr = &mesh[ba_iter->second];
+      ab_ptr->twin_edge = ba_ptr;
+      ba_ptr->twin_edge = ab_ptr;
+    }
+    auto cb_iter = edges.find(std::make_pair(c,b));
+    if(cb_iter != edges.end()) {
+      HalfEdge *cb_ptr = &mesh[cb_iter->second];
+      bc_ptr->twin_edge = cb_ptr;
+      cb_ptr->twin_edge = bc_ptr;
+    }
+    auto ac_iter = edges.find(std::make_pair(a,c));
+    if(ac_iter != edges.end()) {
+      HalfEdge *ac_ptr = &mesh[ac_iter->second];
+      ca_ptr->twin_edge = ac_ptr;
+      ac_ptr->twin_edge = ca_ptr;
+    }
+
+    ab_ptr->next_edge = bc_ptr;
+    bc_ptr->next_edge = ca_ptr;
+    ca_ptr->next_edge = ab_ptr;
+
+    ab_ptr->vertex = b_ptr;
+    bc_ptr->vertex = c_ptr;
+    ca_ptr->vertex = a_ptr;
+
+    ab_ptr->normal = &mesh[normals[b_number]];
+    bc_ptr->normal = &mesh[normals[c_number]];
+    ca_ptr->normal = &mesh[normals[a_number]];
+
+    ab_ptr->type = NormalType::Spherical;
+    bc_ptr->type = NormalType::Spherical;
+    ca_ptr->type = NormalType::Spherical;
+
+    FaceIndex abc = mesh.AddFace();
+    Face *abc_ptr = &mesh[abc];
+    abc_ptr->edge = ab_ptr;
+    abc_ptr->object = object_ptr;
+
+    ab_ptr->face = abc_ptr;
+    bc_ptr->face = abc_ptr;
+    ca_ptr->face = abc_ptr;
+  }
+
+  mesh.CheckAll();
+  return mesh;
+}
+
+/*
 each cell's components are indexed like so:
 
     vertices:                        faces:     * - - - - - - *
@@ -1135,7 +1344,7 @@ HalfEdgeMesh MakeAlignedCells() {
         hcm_set_linear_edge(  22,  23,   3,   3,   3, y_pos)
         hcm_set_linear_edge(  23,  22,  15,   1,   7, x_pos)
 
-        #undef set_linear_edge
+        #undef hcm_set_linear_edge
 
         mesh[faces[0]].edge = &mesh[edges[5]];
         mesh[faces[1]].edge = &mesh[edges[7]];

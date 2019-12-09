@@ -289,9 +289,11 @@ int submain() {
 
   assert(CheckGl());
 
-  HalfEdgeMesh mesh = MakeAlignedCells();
+  //HalfEdgeMesh mesh = MakeAlignedCells();
+  HalfEdgeMesh mesh = MakeGeoSphere(1);
 
   {
+    /*
     PrintingScopedTimer timer("mesh");
 
     Vector3d bisect_normals[] = {
@@ -300,6 +302,8 @@ int submain() {
       Vector3d{0,1,1}, Vector3d{0, 1,-1}};
     for(const Vector3d &normal: bisect_normals)
       mesh.LoopCut(mesh.Bisect(normal));
+    */
+
     /*
     auto bisect_edge_indices = mesh.Bisect(Vector3d{1,1,0});
     DrawableLines lines =

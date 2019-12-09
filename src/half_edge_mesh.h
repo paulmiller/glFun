@@ -21,7 +21,7 @@ public:
   // how to interpolate normals along an edge
   enum class NormalType {
     // The normal is constant along the length of this edge. Eeach end of this
-    // edgemust have the same normal.
+    // edge must have the same normal.
     Constant = 0,
     // This edge approximates an arc on the surface of a unit sphere centered at
     // the origin. Both ends of this edge must be on the sphere.
@@ -268,13 +268,30 @@ private:
 namespace std {
   template<typename T>
   struct hash<HalfEdgeMesh::ComponentIndex<T>> {
-    size_t
-    operator()(const HalfEdgeMesh::ComponentIndex<T> &i) const noexcept {
+    size_t operator()(const HalfEdgeMesh::ComponentIndex<T> &i) const noexcept {
       return i.value;
+    }
+  };
+
+  template<typename T1, typename T2>
+  struct hash<
+    std::pair<
+      HalfEdgeMesh::ComponentIndex<T1>,
+      HalfEdgeMesh::ComponentIndex<T2>
+    >
+  > {
+    size_t operator()(
+      const std::pair<
+        HalfEdgeMesh::ComponentIndex<T1>,
+        HalfEdgeMesh::ComponentIndex<T2>
+      > &i
+    ) const noexcept {
+      return i.first.value ^ (i.second.value << 16);
     }
   };
 }
 
+HalfEdgeMesh MakeGeoSphere(int segments);
 HalfEdgeMesh MakeAlignedCells();
 
 #endif
