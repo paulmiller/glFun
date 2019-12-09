@@ -113,19 +113,26 @@ public:
       ComponentIndex<Vector3d>(i) {}
   };
 
-  const Vertex    &operator[](VertexIndex         i) const { return get(i); }
-  const Vector3d  &operator[](VertexPositionIndex i) const { return get(i); }
-  const Vector3d  &operator[](VertexNormalIndex   i) const { return get(i); }
-  const HalfEdge &operator[](HalfEdgeIndex      i) const { return get(i); }
-  const Face      &operator[](FaceIndex           i) const { return get(i); }
-  const Object    &operator[](ObjectIndex         i) const { return get(i); }
+  size_t VertexCount()         const { return vertices_.size();         }
+  size_t VertexPositionCount() const { return vertex_positions_.size(); }
+  size_t VertexNormalCount()   const { return vertex_normals_.size();   }
+  size_t HalfEdgeCount()       const { return half_edges_.size();       }
+  size_t FaceCount()           const { return faces_.size();            }
+  size_t ObjectCount()         const { return objects_.size();          }
 
-  Vertex    &operator[](VertexIndex         i) { return get(i); }
-  Vector3d  &operator[](VertexPositionIndex i) { return get(i); }
-  Vector3d  &operator[](VertexNormalIndex   i) { return get(i); }
-  HalfEdge &operator[](HalfEdgeIndex      i) { return get(i); }
-  Face      &operator[](FaceIndex           i) { return get(i); }
-  Object    &operator[](ObjectIndex         i) { return get(i); }
+  const Vertex   &operator[](VertexIndex         i) const { return get(i); }
+  const Vector3d &operator[](VertexPositionIndex i) const { return get(i); }
+  const Vector3d &operator[](VertexNormalIndex   i) const { return get(i); }
+  const HalfEdge &operator[](HalfEdgeIndex       i) const { return get(i); }
+  const Face     &operator[](FaceIndex           i) const { return get(i); }
+  const Object   &operator[](ObjectIndex         i) const { return get(i); }
+
+  Vertex   &operator[](VertexIndex         i) { return get(i); }
+  Vector3d &operator[](VertexPositionIndex i) { return get(i); }
+  Vector3d &operator[](VertexNormalIndex   i) { return get(i); }
+  HalfEdge &operator[](HalfEdgeIndex       i) { return get(i); }
+  Face     &operator[](FaceIndex           i) { return get(i); }
+  Object   &operator[](ObjectIndex         i) { return get(i); }
 
   VertexIndex AddVertex();
   VertexPositionIndex AddVertexPosition(const Vector3d &position);
@@ -152,9 +159,10 @@ public:
   VertexIndex CutEdge(HalfEdgeIndex edge_index, double t);
 
   // Connect 2 vertices across a face. The given vertices must be on the given
-  // face. Return the Index of one of the newly created HalfEdges. Do nothing
-  // and return the null Index if the vertices are already connected. Don't
-  // compute new normals.
+  // face. If the vertices are already connected, do nothing and return the null
+  // Index. Otherwise, create a new Face and twin pair of new HalfEdges. Return
+  // the Index of the new HalfEdge pointing to the "b" vertex. This HalfEdge
+  // also points to the new Face. Don't compute new normals.
   HalfEdgeIndex CutFace(
     FaceIndex face_idx, VertexIndex vertex_a_idx, VertexIndex vertex_b_idx);
 
@@ -165,13 +173,14 @@ public:
   // IDs of all the HalfEdges lying on the plane after the bisect.
   std::unordered_set<HalfEdgeIndex> Bisect(const Vector3d &normal);
 
-private:
   #define hcm_define_index_getter(ComponentType, IndexType, List) \
+    public:                                                       \
     IndexType IndexOf(ComponentType *c) const {                   \
       return List.IndexOf(c);                                     \
     }
 
   #define hcm_define_component_getters(ComponentType, IndexType, List) \
+    private:                                                           \
     const ComponentType &get(IndexType i) const {                      \
       assert(i < List.size());                                         \
       return List[i];                                                  \
@@ -198,6 +207,7 @@ private:
   #undef hcm_define_component_getters
   #undef hcm_define_index_getter
 
+private:
   template<typename T>
   class ComponentList {
   public:
@@ -291,7 +301,11 @@ namespace std {
   };
 }
 
-HalfEdgeMesh MakeGeoSphere(int segments);
+HalfEdgeMesh MakeIcosohedron();
+
+// like Loop subdivision, but keep all vertices
+void SubdivideGeosphere(HalfEdgeMesh &mesh);
+
 HalfEdgeMesh MakeAlignedCells();
 
 #endif

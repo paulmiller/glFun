@@ -290,7 +290,10 @@ int submain() {
   assert(CheckGl());
 
   //HalfEdgeMesh mesh = MakeAlignedCells();
-  HalfEdgeMesh mesh = MakeGeoSphere(1);
+  HalfEdgeMesh mesh = MakeIcosohedron();
+  SubdivideGeosphere(mesh);
+  SubdivideGeosphere(mesh);
+  SubdivideGeosphere(mesh);
 
   {
     /*

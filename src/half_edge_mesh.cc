@@ -190,6 +190,7 @@ void HalfEdgeMesh::CheckAll() const {
     assert(previous_edge != nullptr);
 
     // check normals
+    /*
     switch(edge.type) {
     case NormalType::Constant:
       assert( *(edge.normal) == *(previous_edge->normal) );
@@ -212,6 +213,7 @@ void HalfEdgeMesh::CheckAll() const {
     default:
       assert(0);
     }
+    */
 
     // walk the HalfEdges surrounding edge.vertex
     bool found_this_edge = false;
@@ -352,7 +354,7 @@ HalfEdgeMesh::CutEdge(HalfEdgeIndex edge_index, double t) {
 
   // the edges now look like this:
   //          _ _ _ _ _ _
-  //        🡕    edge    🡖
+  //        🡕    edge     🡖
   // start *               * end
   //        🡔 _ _ _ _ _ _ 🡗
   //        edge.twin_edge
@@ -368,7 +370,7 @@ HalfEdgeMesh::CutEdge(HalfEdgeIndex edge_index, double t) {
 
   // the edges now look like this:
   //    _ _ _
-  //  🡕 edge 🡖
+  //  🡕 edge  🡖
   // *         * new     *
   //            🡔 _ _ _ 🡗
   //            twin_edge
@@ -396,7 +398,7 @@ HalfEdgeMesh::CutEdge(HalfEdgeIndex edge_index, double t) {
 
   // the edges now look like this:
   //    _ _ _     _ _ _
-  //  🡕 edge 🡖 🡕 new a 🡖
+  //  🡕 edge  🡖 🡕 new a 🡖
   // *         *         *
   //  🡔 _ _ _ 🡗 🡔 _ _ _ 🡗
   //    new b   twin_edge
@@ -469,11 +471,11 @@ HalfEdgeMesh::HalfEdgeIndex HalfEdgeMesh::CutFace(
   // the face now looks like this:
   //
   //              /             \
-  //  edge_a_in /               \ edge_b_out
+  //   edge_a_in /               \ edge_b_out
   //            /                 \
   //  vertex_a *       face        * vertex_b
   //            \                 /
-  // edge_a_out \               / edge_b_in
+  //  edge_a_out \               / edge_b_in
   //              \             /
 
   new_face->object = face->object;
@@ -505,11 +507,11 @@ HalfEdgeMesh::HalfEdgeIndex HalfEdgeMesh::CutFace(
   // the faces now look like this:
   //
   //              /    face     \
-  //  edge_a_in /               \ edge_b_out
-  //            /    new_edge    \
+  //   edge_a_in /               \ edge_b_out
+  //            /    new_edge     \
   //  vertex_a * - - - - - - - - - * vertex_b
-  //            \ new_edge_twin  /
-  // edge_a_out \               / edge_b_in
+  //            \  new_edge_twin  /
+  //  edge_a_out \               / edge_b_in
   //              \  new_face   /
 
   /*
@@ -518,7 +520,7 @@ HalfEdgeMesh::HalfEdgeIndex HalfEdgeMesh::CutFace(
   #endif
   */
 
-  return new_edge_idx;
+  return new_edge_twin_idx;
 }
 
 void HalfEdgeMesh::LoopCut(std::unordered_set<HalfEdgeIndex> edge_idxs) {
@@ -981,6 +983,8 @@ const double CylinderRadii[] = { R2D2, R10D4, R3D2, 1 };
 } // namespace
 
 /*
+create an icosohedron with a unit circumsphere
+
 an icosohedron's vertices make 3 golden rectangles:
 
             * - - - - - - - - *
@@ -1001,7 +1005,7 @@ an icosohedron's vertices make 3 golden rectangles:
             * - -|/ - - - - - *
                  *
 
-we number the vertices like so:
+number the vertices like so:
 
        * 0
       /|                            8 * - - - * 9
@@ -1030,10 +1034,8 @@ and call the resulting values L and S:
                        ________          ________
   ( L, 0, S ) = ( φ ÷ √ 1² + φ², 0, 1 ÷ √ 1² + φ² )
 */
-HalfEdgeMesh MakeGeoSphere(int segments) {
-  PrintingScopedTimer timer("MakeGeoSphere");
-  // currently just makes icosohedrons; TODO subdivide by "segements"
-  assert(segments >= 1);
+HalfEdgeMesh MakeIcosohedron() {
+  PrintingScopedTimer timer("MakeIcosohedron");
 
   constexpr double L = 0.8506508083520399321815404970630110722404;
   constexpr double S = 0.5257311121191336060256690848478766072855;
@@ -1185,8 +1187,99 @@ HalfEdgeMesh MakeGeoSphere(int segments) {
     ca_ptr->face = abc_ptr;
   }
 
+  #ifndef NDEBUG
   mesh.CheckAll();
+  #endif
+
   return mesh;
+}
+
+void SubdivideGeosphere(HalfEdgeMesh &mesh) {
+  PrintingScopedTimer timer("SubdivideGeosphere");
+
+  using VertexIndex         = HalfEdgeMesh::VertexIndex;
+  using VertexNormalIndex   = HalfEdgeMesh::VertexNormalIndex;
+  using VertexPositionIndex = HalfEdgeMesh::VertexPositionIndex;
+  using HalfEdgeIndex       = HalfEdgeMesh::HalfEdgeIndex;
+  using FaceIndex           = HalfEdgeMesh::FaceIndex;
+
+  using Vertex   = HalfEdgeMesh::Vertex;
+  using HalfEdge = HalfEdgeMesh::HalfEdge;
+
+  using NormalType = HalfEdgeMesh::NormalType;
+
+  #ifndef NDEBUG
+  {
+    // all Faces must be triangles
+    size_t face_count = mesh.FaceCount();
+    for(FaceIndex f(0); f < face_count; ++f) {
+      HalfEdge *start = mesh[f].edge;
+      assert(start->next_edge->next_edge->next_edge == start);
+    }
+
+    // all Vertices must be on the surface of a unit sphere
+    size_t position_count = mesh.VertexPositionCount();
+    for(VertexPositionIndex p; p < position_count; ++p) {
+      double len2 = mesh[p].len2();
+      assert(0.9999 < len2 && len2 < 1.0001); // TODO threshold?
+    }
+  }
+  #endif
+
+  // after cutting an edge, put its twin here so we don't cut the twin again
+  std::unordered_set<HalfEdgeIndex> cut_twins;
+
+  std::unordered_set<VertexIndex> new_vertices;
+
+  size_t edge_count = mesh.HalfEdgeCount();
+  for(HalfEdgeIndex e(0); e < edge_count; ++e) {
+    if(cut_twins.count(e)) continue;
+    cut_twins.insert(mesh.IndexOf(mesh[e].twin_edge));
+
+    VertexIndex v = mesh.CutEdge(e, 0.5);
+    new_vertices.insert(v);
+    Vertex *v_ptr = &mesh[v];
+
+    Vector3d *p_ptr = v_ptr->position;
+    *p_ptr = p_ptr->unit();
+
+    VertexNormalIndex n = mesh.AddVertexNormal(*p_ptr);
+    Vector3d *n_ptr = &mesh[n];
+    HalfEdge *incoming_edge_1 = v_ptr->edge->twin_edge;
+    HalfEdge *incoming_edge_2 = incoming_edge_1->next_edge->twin_edge;
+    incoming_edge_1->normal = n_ptr;
+    incoming_edge_1->type = NormalType::Spherical;
+    incoming_edge_2->normal = n_ptr;
+    incoming_edge_2->type = NormalType::Spherical;
+  }
+
+  size_t face_count = mesh.FaceCount();
+  for(FaceIndex f(0); f < face_count; ++f) {
+    // find the 3 vertices to be joined
+    VertexIndex new_vertices_on_this_face[3];
+    int new_vertices_found = 0;
+    HalfEdge *start_edge = mesh[f].edge;
+    HalfEdge *current_edge = start_edge;
+    for(;;) {
+      VertexIndex v = mesh.IndexOf(current_edge->vertex);
+      if(new_vertices.count(v)) {
+        new_vertices_on_this_face[new_vertices_found] = v;
+        new_vertices_found++;
+        if(new_vertices_found == 3)
+          break;
+      }
+      current_edge = current_edge->next_edge;
+      assert(current_edge != start_edge);
+    }
+
+    mesh.CutFace(f, new_vertices_on_this_face[0], new_vertices_on_this_face[1]);
+    mesh.CutFace(f, new_vertices_on_this_face[1], new_vertices_on_this_face[2]);
+    mesh.CutFace(f, new_vertices_on_this_face[2], new_vertices_on_this_face[0]);
+  }
+
+  #ifndef NDEBUG
+  mesh.CheckAll();
+  #endif
 }
 
 /*
